@@ -43,7 +43,6 @@ try:
                 message_content TEXT,
                 status VARCHAR(20) NOT NULL,
                 error_message TEXT,
-                twilio_message_sid VARCHAR(100),
                 sent_by_user_id INTEGER,
                 created_at DATETIME,
                 FOREIGN KEY(recipient_user_id) REFERENCES user (id),

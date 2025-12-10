@@ -2194,14 +2194,12 @@ def add_practice_musician(practice_id):
                 result = send_practice_assignment_sms(practice, musician, is_new_assignment=True)
                 # Handle old (success, error), new (success, error, sid), and latest (success, error, sid, status) formats
                 if len(result) == 4:
-                    success, error, message_sid, twilio_status = result
+                    success, error, message_sid, _ = result
                 elif len(result) == 3:
                     success, error, message_sid = result
-                    twilio_status = None
                 else:
                     success, error = result[0], result[1] if len(result) > 1 else None
                     message_sid = None
-                    twilio_status = None
                 
                 # Get user info for logging
                 user = musician.user if musician.user_id else None
@@ -2219,9 +2217,7 @@ def add_practice_musician(practice_id):
                         musician_id=musician.id,
                         message_content=f"Practice assignment notification for {practice.date.strftime('%B %d, %Y') if practice.date else 'TBD'}",
                         status='success' if success else 'failed',
-                        twilio_status=twilio_status,
                         error_message=error if not success else None,
-                        twilio_message_sid=message_sid,
                         sent_by_user_id=current_user.id
                     )
                     db.session.add(sms_log)
@@ -4971,14 +4967,12 @@ def send_reminder_sms_job(practice_id, musician_id, reminder_type):
             result = send_practice_reminder_sms(practice, musician, reminder_type)
             # Handle old (success, error), new (success, error, sid), and latest (success, error, sid, status) formats
             if len(result) == 4:
-                success, error, message_sid, twilio_status = result
+                success, error, message_sid, _ = result
             elif len(result) == 3:
                 success, error, message_sid = result
-                twilio_status = None
             else:
                 success, error = result[0], result[1] if len(result) > 1 else None
                 message_sid = None
-                twilio_status = None
             
             # Get user info for logging
             user = musician.user if musician.user_id else None
@@ -4996,9 +4990,7 @@ def send_reminder_sms_job(practice_id, musician_id, reminder_type):
                     musician_id=musician.id,
                     message_content=f"Practice reminder ({reminder_type}) for {practice.date.strftime('%B %d, %Y') if practice.date else 'TBD'}",
                     status='success' if success else 'failed',
-                    twilio_status=twilio_status,
                     error_message=error if not success else None,
-                    twilio_message_sid=message_sid,
                     sent_by_user_id=None  # System-scheduled, no user trigger
                 )
                 db.session.add(sms_log)

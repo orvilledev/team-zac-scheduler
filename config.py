@@ -29,13 +29,6 @@ class Config:
     ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'JPG', 'JPEG', 'PNG', 'GIF'}
     ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'mkv', 'MP4', 'MOV', 'AVI', 'MKV'}
     
-    # SMS Configuration (Twilio)
-    # All Twilio credentials must be set via environment variables
-    TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-    TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-    TWILIO_PHONE_NUMBER = os.environ.get('TWILIO_PHONE_NUMBER')
-    TWILIO_MESSAGING_SERVICE_SID = os.environ.get('TWILIO_MESSAGING_SERVICE_SID')
-    SMS_ENABLED = os.environ.get('SMS_ENABLED', 'True').lower() == 'true'
     
     # Session Configuration
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)

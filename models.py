@@ -445,9 +445,7 @@ class SMSLog(db.Model):
     musician_id = db.Column(db.Integer, db.ForeignKey('musician.id'), nullable=True)  # Related musician (if applicable)
     message_content = db.Column(db.Text)  # The actual message sent
     status = db.Column(db.String(20), nullable=False)  # 'success', 'failed'
-    twilio_status = db.Column(db.String(20), nullable=True)  # Twilio status: 'queued', 'sending', 'sent', 'delivered', 'undelivered', 'failed'
     error_message = db.Column(db.Text, nullable=True)  # Error message if failed
-    twilio_message_sid = db.Column(db.String(100), nullable=True)  # Twilio message SID if successful
     sent_by_user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # User who triggered the SMS (admin/worship leader)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)  # When the SMS was sent
     

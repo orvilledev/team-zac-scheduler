@@ -10,8 +10,6 @@ A Flask web application for managing musician schedules for Sunday services and 
 - **Practice Scheduling**: Schedule practice sessions separately from services
 - **Song Management**: Admin-only song catalog with downloadable chord chart JPG files
 - **Dashboard**: Overview of upcoming services, practices, and statistics
-- **SMS Notifications**: Automatic SMS notifications when musicians are assigned to practices (via Twilio)
-- **SMS Reminders**: Automated reminders sent 1 day before and 1 hour before practice sessions
 
 ## Requirements
 
@@ -52,41 +50,7 @@ A Flask web application for managing musician schedules for Sunday services and 
    
    **⚠️ IMPORTANT: Change the default admin password in production!**
 
-6. **Configure SMS notifications (Optional):**
-   To enable SMS notifications for practice assignments, set up Twilio:
-   
-   **Windows (PowerShell):**
-   ```powershell
-   $env:TWILIO_ACCOUNT_SID="your_account_sid_here"
-   $env:TWILIO_AUTH_TOKEN="your_auth_token_here"
-   $env:TWILIO_PHONE_NUMBER="your_phone_number_here"
-   $env:TWILIO_MESSAGING_SERVICE_SID="your_messaging_service_sid_here"
-   $env:SMS_ENABLED="True"
-   ```
-   
-   **Windows (CMD):**
-   ```cmd
-   set TWILIO_ACCOUNT_SID=your_account_sid_here
-   set TWILIO_AUTH_TOKEN=your_auth_token_here
-   set TWILIO_PHONE_NUMBER=your_phone_number_here
-   set TWILIO_MESSAGING_SERVICE_SID=your_messaging_service_sid_here
-   set SMS_ENABLED=True
-   ```
-   
-   **Linux/Mac:**
-   ```bash
-   export TWILIO_ACCOUNT_SID="your_account_sid_here"
-   export TWILIO_AUTH_TOKEN="your_auth_token_here"
-   export TWILIO_PHONE_NUMBER="your_phone_number_here"
-   export TWILIO_MESSAGING_SERVICE_SID="your_messaging_service_sid_here"
-   export SMS_ENABLED="True"
-   ```
-   
-   Replace `your_auth_token_here` with your actual Twilio Auth Token.
-   
-   **Note:** SMS will be automatically sent when musicians are assigned to practices, and reminders will be scheduled (1 day before and 1 hour before practice).
-
-7. **Run the application:**
+6. **Run the application:**
    ```bash
    python app.py
    ```

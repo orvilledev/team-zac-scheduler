@@ -51,11 +51,6 @@ After deployment starts, set these in your Web Service settings:
 
 **Required:**
 - [ ] `SECRET_KEY` - Generate a strong key (Render can auto-generate)
-- [ ] `TWILIO_ACCOUNT_SID` - Your Twilio Account SID
-- [ ] `TWILIO_AUTH_TOKEN` - Your Twilio Auth Token  
-- [ ] `TWILIO_PHONE_NUMBER` - Your Twilio phone number
-- [ ] `TWILIO_MESSAGING_SERVICE_SID` - Your Twilio Messaging Service SID
-- [ ] `SMS_ENABLED` - Set to `True` or `False`
 
 **Optional (if using Redis/Celery):**
 - [ ] `REDIS_URL` - Redis connection string

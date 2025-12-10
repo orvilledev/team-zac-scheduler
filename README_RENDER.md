@@ -22,11 +22,6 @@ This guide will help you deploy the Team ZAC Scheduler application to Render.
 
 5. **Set Environment Variables** in the Render dashboard:
    - `SECRET_KEY` - Generate a strong secret key (Render can auto-generate this)
-   - `TWILIO_ACCOUNT_SID` - Your Twilio Account SID
-   - `TWILIO_AUTH_TOKEN` - Your Twilio Auth Token
-   - `TWILIO_PHONE_NUMBER` - Your Twilio phone number
-   - `TWILIO_MESSAGING_SERVICE_SID` - Your Twilio Messaging Service SID
-   - `SMS_ENABLED` - Set to `True` or `False`
    - `REDIS_URL` - (Optional) If you're using Redis
    - `CELERY_BROKER_URL` - (Optional) If you're using Celery
    - `CELERY_RESULT_BACKEND` - (Optional) If you're using Celery
@@ -54,7 +49,6 @@ This guide will help you deploy the Team ZAC Scheduler application to Render.
 3. **Set Environment Variables**:
    - `DATABASE_URL` - From your PostgreSQL database (Render auto-provides this if linked)
    - `SECRET_KEY` - Generate a strong secret key
-   - All other environment variables as listed above
 
 4. **Link the Database**:
    - In your Web Service settings, go to "Environment"
