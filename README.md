@@ -1,4 +1,4 @@
-# Praise & Worship Scheduler
+# Team Dashboard
 
 A Flask web application for managing musician schedules for Sunday services and practices, with downloadable chord charts.
 
