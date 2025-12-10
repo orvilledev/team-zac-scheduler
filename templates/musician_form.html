@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.name.label(class="form-label") }}
+                        {{ form.name(class="form-control") }}
+                        {% if form.name.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.name.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.email.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.phone.label(class="form-label") }}
+                        {{ form.phone(class="form-control") }}
+                        {% if form.phone.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.phone.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.mobile.label(class="form-label") }}
+                        {{ form.mobile(class="form-control") }}
+                        {% if form.mobile.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.mobile.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.outlook_email.label(class="form-label") }}
+                        {{ form.outlook_email(class="form-control") }}
+                        {% if form.outlook_email.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.outlook_email.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.whatsapp.label(class="form-label") }}
+                        {{ form.whatsapp(class="form-control") }}
+                        {% if form.whatsapp.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.whatsapp.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.instruments.label(class="form-label") }}
+                        {{ form.instruments(class="form-select") }}
+                        <small class="form-text text-muted">
+                            <strong>Case Manager:</strong> Manages customer cases, resolves shipment issues, handles returns, and ensures customer satisfaction for Amazon FBA orders.<br>
+                            <strong>Shipment Coordinator:</strong> Coordinates FBA shipments, tracks inventory movement, manages warehouse logistics, and ensures timely delivery to Amazon fulfillment centers.<br>
+                            <strong>Data Analyst:</strong> Analyzes inventory levels, sales performance, shipment data, and generates reports to optimize FBA operations and inventory management.<br>
+                            <strong>Team Leader:</strong> Oversees FBA shipment and inventory team operations, coordinates workflows, manages team productivity, and ensures quality standards.
+                        </small>
+                        {% if form.instruments.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.instruments.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.bio.label(class="form-label") }}
+                        {{ form.bio(class="form-control", rows="4") }}
+                        <small class="form-text text-muted">{{ form.bio.description }}</small>
+                        {% if form.bio.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.bio.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.interests.label(class="form-label") }}
+                        {{ form.interests(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.interests.description }}</small>
+                        {% if form.interests.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.interests.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.profile_picture.label(class="form-label") }}
+                        {{ form.profile_picture(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.profile_picture.description }}</small>
+                        {% if musician and musician.profile_picture %}
+                            <div class="mt-2">
+                                <small>Current: <a href="{{ url_for('static', filename=musician.profile_picture) }}" target="_blank">View current picture</a></small>
+                            </div>
+                        {% endif %}
+                        {% if form.profile_picture.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.profile_picture.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.banner.label(class="form-label") }}
+                        {{ form.banner(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.banner.description }}</small>
+                        {% if musician and musician.banner %}
+                            <div class="mt-2">
+                                <small>Current: <a href="{{ url_for('static', filename=musician.banner) }}" target="_blank">View current banner</a></small>
+                            </div>
+                        {% endif %}
+                        {% if form.banner.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.banner.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% if musician %}{{ url_for('view_musician_profile', id=musician.id) }}{% else %}{{ url_for('fba_copy') }}{% endif %}" class="btn btn-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

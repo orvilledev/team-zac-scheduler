@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}User Management - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>User Management</h1>
+    <a href="{{ url_for('add_user') }}" class="btn btn-primary">Add User</a>
+</div>
+
+<div class="alert alert-info">
+    <strong>Note:</strong> Only administrators can access this page. Use this to create login accounts for members.
+</div>
+
+{% if users %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Nickname</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Mobile Number</th>
+                <th>Role</th>
+                <th>Musician Profile</th>
+                <th>Created</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td><strong>{{ user.get_display_name() }}</strong>{% if user.id == current_user.id %} <span class="badge bg-secondary">You</span>{% endif %}</td>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.mobile_number or '-' }}</td>
+                <td>
+                    {% if user.role == 'admin' %}
+                        <span class="badge bg-danger">Admin</span>
+                    {% elif user.role == 'team_leader' %}
+                        <span class="badge bg-danger">Team Leader</span>
+                    {% elif user.role == 'case_manager' %}
+                        <span class="badge bg-primary">Case Manager</span>
+                    {% elif user.role == 'shipment_coordinator' %}
+                        <span class="badge bg-success">Shipment Coordinator</span>
+                    {% elif user.role == 'data_analyst' %}
+                        <span class="badge bg-info">Data Analyst</span>
+                    {% else %}
+                        <span class="badge bg-secondary">{{ user.role|title|replace('_', ' ') }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if user.musician %}
+                        <a href="{{ url_for('view_musician_profile', id=user.musician.id) }}" class="btn btn-sm btn-outline-primary">View Profile</a>
+                    {% else %}
+                        <span class="text-muted">No profile</span>
+                    {% endif %}
+                </td>
+                <td>{{ user.created_at.strftime('%Y-%m-%d') if user.created_at else '-' }}</td>
+                <td>
+                    <a href="{{ url_for('edit_user', id=user.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST" action="{{ url_for('reset_user_password', id=user.id) }}" class="d-inline" onsubmit="return confirm('Reset password for {{ user.get_display_name() }} to \"password123\"?');">
+                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Reset password to 'password123'">Reset Password</button>
+                    </form>
+                    {% if user.id != current_user.id %}
+                    <form method="POST" action="{{ url_for('delete_user', id=user.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user? This action cannot be undone.');">
+                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                    {% else %}
+                    <span class="text-muted">Cannot delete yourself</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    No users found. <a href="{{ url_for('add_user') }}">Create the first user</a>
+</div>
+{% endif %}
+{% endblock %}
+

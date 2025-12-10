@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Service Detail - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Sunday Service - {{ service.date.strftime('%B %d, %Y') }}</h1>
+    <div>
+        {% if current_user.is_worship_leader() %}
+        <a href="{{ url_for('edit_service', id=service.id) }}" class="btn btn-secondary">Edit Service</a>
+        {% endif %}
+        <a href="{{ url_for('services') }}" class="btn btn-outline-secondary">Back to Services</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Service Details</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Date:</strong> {{ service.date.strftime('%A, %B %d, %Y') }}</p>
+                {% if service.theme %}
+                <p><strong>Theme:</strong> {{ service.theme }}</p>
+                {% endif %}
+                {% if service.notes %}
+                <p><strong>Notes:</strong><br>{{ service.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Assigned Musicians</h5>
+                {% if current_user.is_worship_leader() %}
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMusicianModal">Add Team Member</button>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if service.musicians %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Musician</th>
+                                <th>Instrument</th>
+                                <th>Role</th>
+                                {% if current_user.is_worship_leader() %}
+                                <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in service.musicians %}
+                            <tr>
+                                <td>{% if assignment.musician %}<strong style="color: #2C5F6F;">{{ assignment.musician.get_display_name() }}</strong>{% else %}Unknown{% endif %}</td>
+                                <td>{{ assignment.instrument|format_instrument }}</td>
+                                <td>{{ assignment.role or '-' }}</td>
+                                {% if current_user.is_worship_leader() %}
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_service_musician', service_id=service.id, assignment_id=assignment.id) }}" class="d-inline" onsubmit="return confirm('Remove this musician from the service?');">
+                                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No team members assigned yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_worship_leader() %}
+<!-- Add Musician Modal -->
+<div class="modal fade" id="addMusicianModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Team Member to Service</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_service_musician', service_id=service.id) }}">
+                {{ form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        {{ form.musician_id.label(class="form-label") }}
+                        {{ form.musician_id(class="form-select") }}
+                        {% if form.musician_id.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.musician_id.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.instrument.label(class="form-label") }}
+                        {{ form.instrument(class="form-control") }}
+                        {% if form.instrument.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.instrument.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.role.label(class="form-label") }}
+                        {{ form.role(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.role.description }}</small>
+                        {% if form.role.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.role.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

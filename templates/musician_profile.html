@@ -1,0 +1,1108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ musician.name }} - Profile{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Apply custom background color to body if set */
+    {% if musician.background_color and musician.background_color.strip() %}
+    body {
+        background-color: {{ musician.background_color }} !important;
+        background-image: none !important;
+    }
+    {% else %}
+    body {
+        background-color: #E0E0E0 !important;
+        background-image: none !important;
+    }
+    {% endif %}
+    
+    /* Apply custom text color */
+    {% if musician.text_color %}
+    .profile-card, .post-item, .post-content, .bio-text, .info-value {
+        color: {{ musician.text_color }} !important;
+    }
+    {% endif %}
+    
+    /* Apply custom link color */
+    {% if musician.link_color %}
+    a, .btn-link {
+        color: {{ musician.link_color }} !important;
+    }
+    a:hover {
+        color: {{ musician.link_color }} !important;
+        opacity: 0.8;
+    }
+    {% endif %}
+    
+    .profile-header {
+        background: linear-gradient(135deg, #1a2e3f 0%, #2d4a6f 50%, #3d6b7f 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 20px 20px;
+        position: relative;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        overflow: hidden;
+    }
+    
+    .profile-header.has-banner {
+        background: linear-gradient(rgba(26, 46, 63, 0.7), rgba(45, 74, 111, 0.7), rgba(61, 107, 127, 0.7));
+    }
+    
+    .profile-header.has-banner::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-image: inherit;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        z-index: -1;
+        border-radius: 0 0 20px 20px;
+    }
+    
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2d4a6f 0%, #3d6b7f 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        font-weight: bold;
+        color: white;
+        margin: 0 auto 1rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        border: 5px solid white;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .profile-avatar:hover .avatar-edit-btn,
+    .profile-header:hover .banner-edit-btn {
+        opacity: 1;
+    }
+    
+    .avatar-edit-btn {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(26, 46, 63, 0.9);
+        color: white;
+        border: 3px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 10;
+        text-decoration: none;
+    }
+    
+    .avatar-edit-btn:hover {
+        background: rgba(26, 46, 63, 1);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .banner-edit-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background: rgba(26, 46, 63, 0.9);
+        color: white;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 10;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .banner-edit-btn:hover {
+        background: rgba(26, 46, 63, 1);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .profile-header {
+        position: relative;
+    }
+    
+    .profile-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .profile-name {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .profile-role {
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin-bottom: 1rem;
+    }
+    
+    .profile-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .profile-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .profile-card h3 {
+        color: #1a2e3f;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3d6b7f;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #1a2e3f;
+        min-width: 120px;
+        margin-right: 1rem;
+    }
+    
+    .info-value {
+        color: #555;
+        flex: 1;
+    }
+    
+    .badge-custom {
+        display: inline-block;
+        padding: 0.5rem 1rem;
+        margin: 0.25rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    .badge-instrument {
+        background: linear-gradient(135deg, #3d6b7f 0%, #1a2e3f 100%);
+        color: white;
+    }
+    
+    .badge-role {
+        background: linear-gradient(135deg, #FF8C42 0%, #E67A2E 100%);
+        color: white;
+    }
+    
+    .badge-interest {
+        background: linear-gradient(135deg, #2d4a6f 0%, #3d6b7f 100%);
+        color: white;
+    }
+    
+    .bio-text {
+        font-size: 1.1rem;
+        line-height: 1.8;
+        color: #444;
+        font-style: italic;
+    }
+    
+    .upcoming-item {
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border-left: 4px solid #3d6b7f;
+    }
+    
+    .upcoming-date {
+        font-weight: 600;
+        color: #1a2e3f;
+        font-size: 1.1rem;
+    }
+    
+    .upcoming-details {
+        color: #666;
+        font-size: 0.95rem;
+        margin-top: 0.25rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #999;
+        font-style: italic;
+    }
+    
+    .action-buttons {
+        margin-top: 2rem;
+        text-align: center;
+    }
+    
+    .post-form-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .post-item {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .post-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .post-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2d4a6f 0%, #3d6b7f 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: white;
+        margin-right: 1rem;
+        background-size: cover;
+        background-position: center;
+    }
+    
+    .post-content {
+        color: #333;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+        white-space: pre-wrap;
+    }
+    
+    .post-image {
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    
+    .post-video {
+        width: 100%;
+        border-radius: 10px;
+        margin-bottom: 1rem;
+    }
+    
+    .post-time {
+        color: #999;
+        font-size: 0.9rem;
+    }
+    
+    .comment-avatar {
+        width: 35px;
+        height: 35px;
+        min-width: 35px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #2d4a6f 0%, #3d6b7f 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: white;
+        background-size: cover;
+        background-position: center;
+        flex-shrink: 0;
+    }
+    
+    .comment-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .file-upload-preview {
+        margin-top: 1rem;
+        max-width: 200px;
+        border-radius: 10px;
+    }
+    
+    #pastedImagePreview {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 10px;
+        border: 2px dashed #3d6b7f;
+    }
+    
+    #pastedImagePreview img {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    #postContent:focus {
+        border-color: #3d6b7f;
+        box-shadow: 0 0 0 0.2rem rgba(64, 165, 165, 0.25);
+    }
+    
+    .profile-avatar:hover .avatar-edit-btn,
+    .profile-header:hover .banner-edit-btn {
+        opacity: 1;
+    }
+    
+    .avatar-edit-btn {
+        position: absolute;
+        bottom: 0;
+        right: 0;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: rgba(26, 46, 63, 0.9);
+        color: white;
+        border: 3px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 10;
+        text-decoration: none;
+    }
+    
+    .avatar-edit-btn:hover {
+        background: rgba(26, 46, 63, 1);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .banner-edit-btn {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background: rgba(26, 46, 63, 0.9);
+        color: white;
+        border: 2px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: 10;
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+    
+    .banner-edit-btn:hover {
+        background: rgba(26, 46, 63, 1);
+        color: white;
+        text-decoration: none;
+    }
+    
+    @media (max-width: 768px) {
+        .profile-name {
+            font-size: 2rem;
+        }
+        
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            font-size: 3rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="profile-header {% if musician.banner %}has-banner{% endif %}" {% if musician.banner %}style="background-image: url('{{ url_for('static', filename=musician.banner) }}'); background-size: cover; background-position: center; background-repeat: no-repeat;"{% endif %}>
+    {% if can_edit %}
+    <a href="{{ url_for('edit_musician_picture', id=musician.id) }}" class="banner-edit-btn" title="Edit Banner">
+        <i class="bi bi-camera"></i> Edit Banner
+    </a>
+    {% endif %}
+    <div class="container text-center">
+        <div class="profile-avatar">
+            {% if musician.profile_picture %}
+                <img src="{{ url_for('static', filename=musician.profile_picture) }}" alt="{{ musician.name }}">
+            {% else %}
+                {{ musician.name[0].upper() }}
+            {% endif %}
+            {% if can_edit %}
+            <a href="{{ url_for('edit_musician_picture', id=musician.id) }}" class="avatar-edit-btn" title="Edit Profile Picture">
+                <i class="bi bi-camera"></i>
+            </a>
+            {% endif %}
+        </div>
+        <h1 class="profile-name">{{ user.get_display_name() if user else musician.name }}</h1>
+        {% if user and user.role %}
+        <div class="profile-role">
+            {% set role_to_show = None %}
+            {% if musician.instruments and musician.instruments in ['case_manager', 'shipment_coordinator', 'data_analyst', 'team_leader'] %}
+                {% set role_to_show = musician.instruments %}
+            {% elif user.role in ['case_manager', 'shipment_coordinator', 'data_analyst', 'team_leader', 'admin'] %}
+                {% set role_to_show = user.role %}
+            {% endif %}
+            
+            {% if role_to_show == 'admin' or role_to_show == 'team_leader' %}
+                <span class="badge bg-danger">Team Leader</span>
+            {% elif role_to_show == 'case_manager' %}
+                <span class="badge bg-primary">Case Manager</span>
+            {% elif role_to_show == 'shipment_coordinator' %}
+                <span class="badge bg-success">Shipment Coordinator</span>
+            {% elif role_to_show == 'data_analyst' %}
+                <span class="badge bg-info">Data Analyst</span>
+            {% else %}
+                <span class="badge bg-secondary">Team Member</span>
+            {% endif %}
+        </div>
+        {% endif %}
+        <div class="action-buttons">
+            {% if can_edit %}
+            <a href="{{ url_for('edit_musician', id=musician.id) }}" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> Edit Profile
+            </a>
+            <a href="{{ url_for('customize_profile', id=musician.id) }}" class="btn btn-info">
+                <i class="bi bi-palette"></i> Customize Profile
+            </a>
+            {% elif user and current_user.id != user.id %}
+            <button class="btn btn-primary" onclick="openPrivateChat({{ user.id }}, '{{ user.get_display_name()|replace("'", "\\'") }}')">
+                <i class="fas fa-envelope"></i> Message
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Left Column -->
+        <div class="col-lg-8">
+            <!-- Post Creation Form (only for own profile) -->
+            {% if user and user.id == current_user.id %}
+            <div class="post-form-card">
+                <h3 style="color: #2C5F6F; margin-bottom: 1rem;">Create Post</h3>
+                <form method="POST" action="{{ url_for('create_profile_post', id=musician.id) }}" enctype="multipart/form-data" id="postForm">
+                    {{ post_form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ post_form.content(class="form-control", rows="3", placeholder="What's on your mind? (You can paste images here!)", id="postContent") }}
+                    </div>
+                    <div id="pastedImagePreview" class="mb-3" style="display: none;">
+                        <img id="pastedImage" src="" alt="Pasted image" style="max-width: 100%; max-height: 300px; border-radius: 8px; border: 2px solid #ddd;">
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePastedImage()">Remove Image</button>
+                            <small class="text-muted ms-2">Image pasted from clipboard</small>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ post_form.image(class="form-control", id="imageInput") }}
+                            <small class="form-text text-muted">{{ post_form.image.description }}</small>
+                        </div>
+                        <div class="col-md-6">
+                            {{ post_form.video(class="form-control") }}
+                            <small class="form-text text-muted">{{ post_form.video.description }}</small>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Post</button>
+                </form>
+            </div>
+            {% endif %}
+            
+            <!-- Posts Feed -->
+            <h3 style="color: #2C5F6F; margin-bottom: 1.5rem;">Wall Posts</h3>
+            {% if posts %}
+                {% for post in posts %}
+                <div class="post-item" id="post-{{ post.id }}">
+                    <div class="post-header">
+                        <div class="post-avatar">
+                            {% if post.musician and post.musician.profile_picture %}
+                                <img src="{{ url_for('static', filename=post.musician.profile_picture) }}" alt="{{ post.musician.user.get_display_name() if post.musician.user else post.musician.name }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                            {% else %}
+                                {{ (post.musician.user.get_display_name() if post.musician.user else post.musician.name)[0].upper() if post.musician else '?' }}
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <strong>{{ post.musician.user.get_display_name() if post.musician and post.musician.user else (post.musician.name if post.musician else 'Unknown') }}</strong>
+                                    <div class="post-time">{{ post.created_at|format_manila_time('%B %d, %Y at %I:%M %p') }}</div>
+                                </div>
+                                {% if post.musician and post.musician.user_id == current_user_id %}
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('edit_profile_post', post_id=post.id) }}" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deletePostModal{{ post.id }}">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if post.content %}
+                    <div class="post-content">{{ post.content }}</div>
+                    {% endif %}
+                    {% if post.image_path %}
+                    <img src="{{ url_for('static', filename=post.image_path) }}" alt="Post image" class="post-image">
+                    {% endif %}
+                    {% if post.video_path %}
+                    <video controls class="post-video">
+                        <source src="{{ url_for('static', filename=post.video_path) }}" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    {% endif %}
+                    
+                    <!-- Post Interactions -->
+                    <div class="post-interactions mt-3 pt-3 border-top">
+                        <div class="d-flex justify-content-around mb-2">
+                            <button class="btn btn-sm btn-link text-decoration-none like-btn {% if post.is_liked_by(current_user_id) %}text-primary{% else %}text-muted{% endif %}" 
+                                    data-post-id="{{ post.id }}" onclick="toggleLike({{ post.id }})" title="Like">
+                                <span style="font-size: 1.2rem;">👍</span> <span class="like-count">{{ post.likes|length }}</span>
+                            </button>
+                            <button class="btn btn-sm btn-link text-decoration-none heart-btn {% if post.is_hearted_by(current_user_id) %}text-danger{% else %}text-muted{% endif %}" 
+                                    data-post-id="{{ post.id }}" onclick="toggleHeart({{ post.id }})" title="Heart">
+                                <span style="font-size: 1.2rem;">❤️</span> <span class="heart-count">{{ post.hearts|length }}</span>
+                            </button>
+                            <button class="btn btn-sm btn-link text-decoration-none share-btn text-muted" 
+                                    data-post-id="{{ post.id }}" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#sharePostModal{{ post.id }}" 
+                                    title="Share this post to your wall">
+                                <i class="bi bi-share"></i> Share <span class="share-count">{{ post.reposts|length }}</span>
+                            </button>
+                            <button class="btn btn-sm btn-link text-decoration-none text-muted" type="button" data-bs-toggle="collapse" data-bs-target="#comments-{{ post.id }}">
+                                <i class="bi bi-chat"></i> Comment <span class="comment-count">{{ post.comments|length }}</span>
+                            </button>
+                        </div>
+                        
+                        <!-- Comments Section -->
+                        <div class="collapse" id="comments-{{ post.id }}">
+                            <div class="mt-3">
+                                <!-- Comment Form -->
+                                <form method="POST" action="{{ url_for('add_post_comment', post_id=post.id) }}" class="mb-3">
+                                    <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                    <div class="input-group">
+                                        <input type="text" name="content" class="form-control" placeholder="Write a comment..." required>
+                                        <button type="submit" class="btn btn-primary">Post</button>
+                                    </div>
+                                </form>
+                                
+                                <!-- Comments List -->
+                                {% if post.comments %}
+                                <div class="comments-list">
+                                    {% for comment in post.comments %}
+                                    <div class="comment-item mb-2 p-2 bg-light rounded">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="d-flex flex-grow-1">
+                                                <div class="comment-avatar me-2">
+                                                    {% if comment.user and comment.user.musician and comment.user.musician.profile_picture %}
+                                                        <img src="{{ url_for('static', filename=comment.user.musician.profile_picture) }}" alt="{{ comment.user.get_display_name() }}" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">
+                                                    {% else %}
+                                                        {{ comment.user.get_display_name()[0].upper() if comment.user and comment.user.get_display_name() else '?' }}
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <strong>{{ comment.user.get_display_name() if comment.user else 'Unknown' }}</strong>
+                                                    <div class="small text-muted">{{ comment.content }}</div>
+                                                    <div class="small text-muted">{{ comment.created_at|format_manila_time('%b %d, %Y at %I:%M %p') }}</div>
+                                                </div>
+                                            </div>
+                                            {% if comment.user_id == current_user_id %}
+                                            <form method="POST" action="{{ url_for('delete_post_comment', comment_id=comment.id) }}" class="d-inline" onsubmit="return confirm('Delete this comment?');">
+                                                <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0">×</button>
+                                            </form>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Share Post Modal -->
+                {% if current_user.is_authenticated %}
+                <div class="modal fade" id="sharePostModal{{ post.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Share Post</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <form method="POST" action="{{ url_for('share_post', post_id=post.id) }}" enctype="multipart/form-data">
+                                <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Share this post to your wall</label>
+                                        {% set original_author = post.musician.user.get_display_name() if post.musician and post.musician.user else (post.musician.name if post.musician else 'Unknown') %}
+                                        <textarea name="content" class="form-control" rows="4" placeholder="Add a comment or mention @{{ original_author }}...">{% if post.content %}Shared from @{{ original_author }}:
+
+{{ post.content }}{% else %}Shared from @{{ original_author }}{% endif %}</textarea>
+                                        <small class="form-text text-muted">You can edit this before sharing. Use @ to mention the original poster.</small>
+                                    </div>
+                                    {% if post.image_path %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Original Image</label>
+                                        <img src="{{ url_for('static', filename=post.image_path) }}" alt="Post image" class="img-fluid rounded" style="max-height: 200px;">
+                                        <input type="hidden" name="original_image_path" value="{{ post.image_path }}">
+                                    </div>
+                                    {% endif %}
+                                    {% if post.video_path %}
+                                    <div class="mb-3">
+                                        <label class="form-label">Original Video</label>
+                                        <video controls class="w-100 rounded" style="max-height: 200px;">
+                                            <source src="{{ url_for('static', filename=post.video_path) }}" type="video/mp4">
+                                        </video>
+                                        <input type="hidden" name="original_video_path" value="{{ post.video_path }}">
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">Share to My Wall</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Delete Post Modal -->
+                {% if post.musician and post.musician.user_id == current_user_id %}
+                <div class="modal fade" id="deletePostModal{{ post.id }}" tabindex="-1" aria-labelledby="deletePostModalLabel{{ post.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                            <div class="modal-header" style="border-bottom: 2px solid #e0e0e0; background: linear-gradient(135deg, #1a2e3f 0%, #2d4a6f 50%, #3d6b7f 100%); border-radius: 15px 15px 0 0;">
+                                <h5 class="modal-title" id="deletePostModalLabel{{ post.id }}" style="color: white; font-weight: 600;">
+                                    Delete Post
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body" style="padding: 2rem; background: #ffffff;">
+                                <div style="text-align: center; padding: 1rem 0;">
+                                    <div style="font-size: 4rem; margin-bottom: 1rem;">🗑️</div>
+                                    <p style="color: #1a2e3f; font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;">
+                                        Are you sure you want to delete this post?
+                                    </p>
+                                    <p style="color: #6c757d; font-size: 0.95rem; margin-bottom: 0;">
+                                        This action cannot be undone.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="modal-footer" style="border-top: 2px solid #e0e0e0; background: #ffffff; border-radius: 0 0 15px 15px; justify-content: center;">
+                                <button type="button" class="btn" data-bs-dismiss="modal" style="background: #f5f5f5; border: 1px solid #e0e0e0; color: #1a2e3f; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500; margin-right: 1rem;">Cancel</button>
+                                <form method="POST" action="{{ url_for('delete_profile_post', post_id=post.id) }}" class="d-inline">
+                                    <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                    <button type="submit" class="btn" style="background: linear-gradient(135deg, #2d4a6f 0%, #1e3a5f 100%); border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">
+                                        Delete Post
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>No posts yet. {% if can_edit %}Be the first to share something!{% else %}Check back later for updates.{% endif %}</p>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Right Column -->
+        <div class="col-lg-4">
+            <!-- Bio Section -->
+            {% if musician.bio %}
+            <div class="profile-card">
+                <h3>About Me</h3>
+                <p class="bio-text">{{ musician.bio }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Role Section -->
+            {% set role_to_show = None %}
+            {% if musician.instruments and musician.instruments in ['case_manager', 'shipment_coordinator', 'data_analyst', 'team_leader'] %}
+                {% set role_to_show = musician.instruments %}
+            {% elif musician.user and musician.user.role in ['case_manager', 'shipment_coordinator', 'data_analyst', 'team_leader'] %}
+                {% set role_to_show = musician.user.role %}
+            {% endif %}
+            
+            <div class="profile-card">
+                <h3>Role</h3>
+                <div>
+                    {% if role_to_show == 'case_manager' %}
+                        <div><strong>Case Manager</strong></div>
+                        <p class="mt-2 text-muted">Manages customer cases, resolves shipment issues, handles returns, and ensures customer satisfaction for Amazon FBA orders. Works closely with Amazon Seller Support to address customer concerns and maintain high service standards.</p>
+                    {% elif role_to_show == 'shipment_coordinator' %}
+                        <div><strong>Shipment Coordinator</strong></div>
+                        <p class="mt-2 text-muted">Coordinates FBA shipments, tracks inventory movement, manages warehouse logistics, and ensures timely delivery to Amazon fulfillment centers. Monitors shipment status, handles labeling requirements, and coordinates with carriers and fulfillment partners.</p>
+                    {% elif role_to_show == 'data_analyst' %}
+                        <div><strong>Data Analyst</strong></div>
+                        <p class="mt-2 text-muted">Analyzes inventory levels, sales performance, shipment data, and generates reports to optimize FBA operations and inventory management. Identifies trends, forecasts demand, and provides insights to improve profitability and reduce stockouts.</p>
+                    {% elif role_to_show == 'team_leader' %}
+                        <div><strong>Team Leader</strong></div>
+                        <p class="mt-2 text-muted">Oversees FBA shipment and inventory team operations, coordinates workflows, manages team productivity, and ensures quality standards. Provides guidance, monitors performance metrics, and implements process improvements to enhance operational efficiency.</p>
+                    {% else %}
+                        <span class="text-muted">No role assigned</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Interests Section -->
+            {% if musician.interests %}
+            <div class="profile-card">
+                <h3>Interests & More</h3>
+                <div>
+                    {% for interest in musician.interests.split(',') %}
+                        <span class="badge-custom badge-interest">{{ interest.strip() }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Contact Info -->
+            {% if musician.mobile or musician.outlook_email or musician.whatsapp or musician.email or musician.phone %}
+            <div class="profile-card">
+                <h3>Contact</h3>
+                {% if musician.mobile %}
+                <div class="info-item">
+                    <span class="info-label">Mobile:</span>
+                    <span class="info-value">{{ musician.mobile }}</span>
+                </div>
+                {% endif %}
+                {% if musician.outlook_email %}
+                <div class="info-item">
+                    <span class="info-label">Outlook Email:</span>
+                    <span class="info-value">{{ musician.outlook_email }}</span>
+                </div>
+                {% endif %}
+                {% if musician.whatsapp %}
+                <div class="info-item">
+                    <span class="info-label">WhatsApp:</span>
+                    <span class="info-value">{{ musician.whatsapp }}</span>
+                </div>
+                {% endif %}
+                {% if musician.email %}
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ musician.email }}</span>
+                </div>
+                {% endif %}
+                {% if musician.phone %}
+                <div class="info-item">
+                    <span class="info-label">Phone:</span>
+                    <span class="info-value">{{ musician.phone }}</span>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <!-- Upcoming Services -->
+            {% if upcoming_services %}
+            <div class="profile-card">
+                <h3>Upcoming Services</h3>
+                {% for service in upcoming_services %}
+                <div class="upcoming-item">
+                    <div class="upcoming-date">{{ service.date.strftime('%B %d, %Y') }}</div>
+                    <div class="upcoming-details">
+                        {% if service.theme %}{{ service.theme }}<br>{% endif %}
+                        <strong>{{ service.instrument }}</strong>
+                        {% if service.role %} • {{ service.role }}{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Music Player -->
+            {% if musician.music_player_embed %}
+            <div class="profile-card">
+                <h3>🎵 My Music</h3>
+                <div class="music-player-container">
+                    {{ musician.music_player_embed|safe }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Apply Custom CSS -->
+{% if musician.custom_css %}
+<style>
+{{ musician.custom_css|safe }}
+</style>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleLike(postId) {
+    fetch(`/posts/${postId}/like`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update like button
+            const likeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+            const likeCountSpan = likeBtn.querySelector('.like-count');
+            likeCountSpan.textContent = data.like_count;
+            if (data.has_like) {
+                likeBtn.classList.remove('text-muted');
+                likeBtn.classList.add('text-primary');
+            } else {
+                likeBtn.classList.remove('text-primary');
+                likeBtn.classList.add('text-muted');
+            }
+            
+            // Update heart button (in case it was removed)
+            const heartBtn = document.querySelector(`.heart-btn[data-post-id="${postId}"]`);
+            const heartCountSpan = heartBtn.querySelector('.heart-count');
+            heartCountSpan.textContent = data.heart_count;
+            if (data.has_heart) {
+                heartBtn.classList.remove('text-muted');
+                heartBtn.classList.add('text-danger');
+            } else {
+                heartBtn.classList.remove('text-danger');
+                heartBtn.classList.add('text-muted');
+            }
+        }
+    });
+}
+
+function toggleHeart(postId) {
+    fetch(`/posts/${postId}/heart`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Update heart button
+            const heartBtn = document.querySelector(`.heart-btn[data-post-id="${postId}"]`);
+            const heartCountSpan = heartBtn.querySelector('.heart-count');
+            heartCountSpan.textContent = data.heart_count;
+            if (data.has_heart) {
+                heartBtn.classList.remove('text-muted');
+                heartBtn.classList.add('text-danger');
+            } else {
+                heartBtn.classList.remove('text-danger');
+                heartBtn.classList.add('text-muted');
+            }
+            
+            // Update like button (in case it was removed)
+            const likeBtn = document.querySelector(`.like-btn[data-post-id="${postId}"]`);
+            const likeCountSpan = likeBtn.querySelector('.like-count');
+            likeCountSpan.textContent = data.like_count;
+            if (data.has_like) {
+                likeBtn.classList.remove('text-muted');
+                likeBtn.classList.add('text-primary');
+            } else {
+                likeBtn.classList.remove('text-primary');
+                likeBtn.classList.add('text-muted');
+            }
+        }
+    });
+}
+
+// Handle image paste functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const postContent = document.getElementById('postContent');
+    const imageInput = document.getElementById('imageInput');
+    const pastedImagePreview = document.getElementById('pastedImagePreview');
+    const pastedImage = document.getElementById('pastedImage');
+    
+    if (postContent && imageInput) {
+        // Listen for paste events on the textarea
+        postContent.addEventListener('paste', function(e) {
+            const clipboardData = e.clipboardData || window.clipboardData;
+            const items = clipboardData.items;
+            
+            // Check if clipboard contains image
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    
+                    const blob = items[i].getAsFile();
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        // Show preview
+                        pastedImage.src = event.target.result;
+                        pastedImagePreview.style.display = 'block';
+                        
+                        // Convert blob to File and set to input
+                        const file = new File([blob], 'pasted-image-' + Date.now() + '.png', {
+                            type: blob.type,
+                            lastModified: Date.now()
+                        });
+                        
+                        // Create a new FileList with the pasted file
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        imageInput.files = dataTransfer.files;
+                        
+                        // Trigger change event
+                        imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    };
+                    
+                    reader.readAsDataURL(blob);
+                    break;
+                }
+            }
+        });
+        
+        // Also listen for paste on the entire form area
+        const postFormCard = document.querySelector('.post-form-card');
+        if (postFormCard) {
+            postFormCard.addEventListener('paste', function(e) {
+                // Only handle if focus is on textarea or form
+                if (e.target === postContent || e.target.closest('.post-form-card')) {
+                    const clipboardData = e.clipboardData || window.clipboardData;
+                    const items = clipboardData.items;
+                    
+                    for (let i = 0; i < items.length; i++) {
+                        if (items[i].type.indexOf('image') !== -1) {
+                            e.preventDefault();
+                            
+                            // Focus on textarea if not already
+                            if (document.activeElement !== postContent) {
+                                postContent.focus();
+                            }
+                            
+                            const blob = items[i].getAsFile();
+                            const reader = new FileReader();
+                            
+                            reader.onload = function(event) {
+                                pastedImage.src = event.target.result;
+                                pastedImagePreview.style.display = 'block';
+                                
+                                const file = new File([blob], 'pasted-image-' + Date.now() + '.png', {
+                                    type: blob.type,
+                                    lastModified: Date.now()
+                                });
+                                
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                imageInput.files = dataTransfer.files;
+                                imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                            };
+                            
+                            reader.readAsDataURL(blob);
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+
+// Function to remove pasted image
+function removePastedImage() {
+    const pastedImagePreview = document.getElementById('pastedImagePreview');
+    const imageInput = document.getElementById('imageInput');
+    
+    if (pastedImagePreview) {
+        pastedImagePreview.style.display = 'none';
+    }
+    
+    if (imageInput) {
+        imageInput.value = '';
+        imageInput.files = new DataTransfer().files;
+    }
+}
+
+// Clear preview when file input changes manually
+document.addEventListener('DOMContentLoaded', function() {
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput) {
+        imageInput.addEventListener('change', function(e) {
+            // If user manually selects a file, hide pasted image preview
+            const pastedImagePreview = document.getElementById('pastedImagePreview');
+            if (e.target.files.length > 0 && pastedImagePreview) {
+                // Only hide if it was showing a pasted image
+                const pastedImage = document.getElementById('pastedImage');
+                if (pastedImage && pastedImage.src && pastedImage.src.startsWith('data:')) {
+                    // User selected a new file, so clear the pasted preview
+                    // But actually, we might want to keep it if they're adding another image
+                    // So let's not auto-hide it
+                }
+            }
+        });
+    }
+});
+
+function openPrivateChat(recipientId, recipientName) {
+    // Store recipient info in sessionStorage
+    sessionStorage.setItem('privateChatRecipientId', recipientId);
+    sessionStorage.setItem('privateChatRecipientName', recipientName);
+    
+    // Trigger the chat button click to open modal
+    const chatButton = document.getElementById('chatButton');
+    if (chatButton) {
+        chatButton.click();
+    }
+}
+
+</script>
+{% endblock %}
+

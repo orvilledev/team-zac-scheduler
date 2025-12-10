@@ -1,0 +1,967 @@
+{% extends "base.html" %}
+
+{% block title %}Availability - {{ user.get_display_name() if user else musician.name }} - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.css" rel="stylesheet">
+<style>
+    /* Make events fill entire day cell */
+    .fc-daygrid-day {
+        position: relative;
+    }
+    
+    /* Center the day body content */
+    .fc-daygrid-day-body {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 1 !important;
+    }
+    
+    .fc-daygrid-day-frame {
+        position: relative;
+        min-height: 100px;
+        display: flex !important;
+        flex-direction: column !important;
+        transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease !important;
+    }
+    
+    /* Center the day body content */
+    .fc-daygrid-day-body {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: 1 !important;
+    }
+    
+    /* Style day headers (Sun, Mon, Tue, etc.) with theme color */
+    .fc-col-header-cell {
+        background-color: var(--bg-secondary, #e8e4d8) !important;
+        border-color: var(--border-color, #d4d0c4) !important;
+    }
+    
+    .fc-col-header-cell-cushion {
+        color: var(--primary-color, #1a2e1a) !important;
+        font-weight: 600 !important;
+        font-size: 0.9rem !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
+    }
+    
+    /* Style date numbers with theme color */
+    .fc-daygrid-day-number {
+        color: var(--text-color, #1a2e1a) !important;
+        font-weight: 500 !important;
+        transition: color 0.2s ease, font-weight 0.2s ease !important;
+        padding: 0.3rem !important;
+    }
+    
+    /* Style today's date */
+    .fc-day-today .fc-daygrid-day-number {
+        background-color: var(--success-light, #b4c9a3) !important;
+        color: var(--primary-color, #1a2e1a) !important;
+        font-weight: 700 !important;
+        border-radius: 50% !important;
+        width: 2rem !important;
+        height: 2rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0.25rem !important;
+    }
+    
+    /* Style other month dates (dates from previous/next month) */
+    .fc-day-other .fc-daygrid-day-number {
+        color: var(--text-secondary, #5a6b3a) !important;
+        opacity: 0.6 !important;
+    }
+    
+    .fc-daygrid-day-events {
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        flex: 1 !important;
+    }
+    
+    .fc-event-available,
+    .fc-event-unavailable {
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 8px !important;
+        width: 100% !important;
+        min-height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        cursor: pointer !important;
+        pointer-events: auto !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+    }
+    
+    .fc-event-available {
+        background: linear-gradient(135deg, #9fb88c 0%, #8ca67b 100%) !important;
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 0.95rem !important;
+        box-shadow: 0 2px 8px rgba(159, 184, 140, 0.3) !important;
+    }
+    
+    .fc-event-unavailable {
+        /* Background color will be set inline by JavaScript for randomization */
+        color: white !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 auto !important;
+        background: transparent !important;
+    }
+    
+    .fc-event-pending-leave {
+        background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%) !important;
+        color: #343a40 !important;
+        font-weight: 600 !important;
+        font-size: 0.85rem !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        box-sizing: border-box !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 auto !important;
+        cursor: pointer !important;
+    }
+    
+    .fc-event-pending-leave .fc-event-title {
+        color: #343a40 !important;
+    }
+    
+    /* Ensure day cells are clickable */
+    .fc-daygrid-day {
+        cursor: pointer !important;
+        position: relative !important;
+        pointer-events: auto !important;
+    }
+    
+    .fc-daygrid-day-frame {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+    
+    
+    /* Hover effects for calendar days */
+    .fc-daygrid-day:hover .fc-daygrid-day-frame {
+        background-color: rgba(180, 201, 163, 0.3) !important;
+        transform: scale(1.02);
+        box-shadow: 0 4px 12px rgba(26, 46, 26, 0.15);
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    
+    .fc-daygrid-day:hover .fc-daygrid-day-number {
+        color: var(--info-color, #6b7d4a) !important;
+        font-weight: bold !important;
+        transform: scale(1.1);
+        transition: all 0.2s ease;
+    }
+    
+    /* Hover effect for days with events */
+    .fc-daygrid-day.fc-day-has-event:hover .fc-daygrid-day-frame {
+        background-color: rgba(180, 201, 163, 0.3) !important;
+    }
+    
+    .fc-daygrid-day.fc-day-has-event:hover .fc-event {
+        transform: scale(1.05);
+        transition: transform 0.2s ease;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+    }
+    
+    /* Style day number when event is present */
+    .fc-daygrid-day.fc-day-has-event .fc-daygrid-day-number {
+        color: rgba(255, 255, 255, 0.95) !important;
+        font-weight: 700 !important;
+        z-index: 2 !important;
+        position: relative !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+    }
+    
+    /* Ensure event content is properly styled */
+    .fc-event-available .fc-event-title,
+    .fc-event-unavailable .fc-event-title {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        padding: 0.5rem !important;
+        line-height: 1.3 !important;
+        width: 100% !important;
+    }
+    
+    /* Make sure the event content div fills the space */
+    .fc-event-available > .fc-event-main,
+    .fc-event-unavailable > .fc-event-main {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    
+    .availability-legend {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 3px;
+    }
+    .legend-available {
+        background: linear-gradient(135deg, #9fb88c 0%, #8ca67b 100%);
+    }
+    .legend-unavailable {
+        background: linear-gradient(135deg, #a64a4a 0%, #943a3a 100%);
+    }
+    .legend-default {
+        background-color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Availability - {{ user.get_display_name() if user else musician.name }}</h1>
+    <a href="{{ url_for('fba_copy') }}" class="btn btn-outline-secondary">Back to Team</a>
+</div>
+
+{% if is_own_availability %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Instructions</h5>
+        <ul class="mb-0">
+            <li><strong>Click a date</strong> to mark it as <span class="text-success">Available</span> (green)</li>
+            <li><strong>Click again</strong> to mark it as <span class="text-danger">Unavailable</span> (red) - you'll be asked to provide a reason</li>
+            <li><strong>Click a third time</strong> to remove the availability marker (default/gray)</li>
+            <li>Dates marked as unavailable will prevent you from being scheduled on those dates</li>
+        </ul>
+    </div>
+</div>
+{% else %}
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Viewing Availability</h5>
+        <p class="mb-0">You are viewing the availability calendar for <strong>{{ user.get_display_name() }}</strong>. Only they can modify their availability.</p>
+    </div>
+</div>
+{% endif %}
+
+<div class="availability-legend">
+    <div class="legend-item">
+        <div class="legend-color legend-available"></div>
+        <span>Available</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color legend-unavailable"></div>
+        <span>Unavailable (Approved)</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);"></div>
+        <span>Pending Leave</span>
+    </div>
+    <div class="legend-item">
+        <div class="legend-color legend-default"></div>
+        <span>Not Set (Default)</span>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div id="calendar"></div>
+    </div>
+</div>
+<!-- Custom Unavailability Reason Modal -->
+<div class="modal fade" id="unavailableReasonModal" tabindex="-1" aria-labelledby="unavailableReasonModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="border-bottom: 2px solid #e8e4d8; background: linear-gradient(135deg, #1a2e1a 0%, #2a3f2a 100%); border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="unavailableReasonModalLabel" style="color: white; font-weight: 600;">
+                    File a Leave
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background: #f5f1e8;">
+                <p style="color: #1a2e1a; font-size: 1.1rem; margin-bottom: 1.5rem; text-align: center;">
+                    Please choose a reason for filing a leave on this date. Your request will be sent to your Team Leader for approval.
+                </p>
+                <div class="mb-3">
+                    <select id="unavailableReasonSelect" class="form-select" style="font-size: 1rem; padding: 0.75rem; border-radius: 8px; border: 2px solid #6b7d4a;">
+                        <option value="">Select a reason...</option>
+                        <option value="Sickness">Sickness</option>
+                        <option value="Family Emergency">Family Emergency</option>
+                        <option value="Personal Matters">Personal Matters</option>
+                        <option value="Birthday Leave">Birthday Leave</option>
+                        <option value="Training/Seminar">Training/Seminar</option>
+                        <option value="Maternity/Paternity Leave">Maternity/Paternity Leave</option>
+                        <option value="Others (specify)">Others (specify)</option>
+                    </select>
+                </div>
+                <div class="mb-3" id="othersReasonContainer" style="display: none;">
+                    <label for="othersReasonInput" class="form-label" style="color: #1a2e1a; font-weight: 500;">Please specify:</label>
+                    <input type="text" id="othersReasonInput" class="form-control" placeholder="Enter your reason..." style="font-size: 1rem; padding: 0.75rem; border-radius: 8px; border: 2px solid #6b7d4a;">
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e8e4d8; background: #f5f1e8; border-radius: 0 0 15px 15px;">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="background: #e8e4d8; border: 1px solid #d4d0c4; color: #1a2e1a; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">Cancel</button>
+                <button type="button" class="btn" id="confirmUnavailableBtn" style="background: linear-gradient(135deg, #6b7d4a 0%, #5a6b3a 100%); border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.5/main.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        const userId = {{ user.id }};
+        const availabilityData = {{ availability | tojson }};
+        
+        // Get color and emoji based on unavailability reason
+        function getReasonColorAndEmoji(reason) {
+            if (!reason) {
+                // Default fallback
+                return {
+                    color: '#dc3545',
+                    darkerColor: '#c82333',
+                    emoji: '❌'
+                };
+            }
+            
+            const reasonLower = reason.toLowerCase();
+            
+            // Sickness
+            if (reasonLower.includes('sickness') || reasonLower.includes('sick')) {
+                return {
+                    color: '#dc3545',
+                    darkerColor: '#c82333',
+                    emoji: '🤒'
+                };
+            }
+            // Family Emergency
+            else if (reasonLower.includes('family emergency') || reasonLower.includes('emergency')) {
+                return {
+                    color: '#fd7e14',
+                    darkerColor: '#e66a00',
+                    emoji: '🚨'
+                };
+            }
+            // Personal Matters
+            else if (reasonLower.includes('personal matters') || reasonLower.includes('personal')) {
+                return {
+                    color: '#0d6efd',
+                    darkerColor: '#0b5ed7',
+                    emoji: '📋'
+                };
+            }
+            // Birthday Leave
+            else if (reasonLower.includes('birthday')) {
+                return {
+                    color: '#ff69b4',
+                    darkerColor: '#ff1493',
+                    emoji: '🎂'
+                };
+            }
+            // Training/Seminar
+            else if (reasonLower.includes('training') || reasonLower.includes('seminar')) {
+                return {
+                    color: '#8b4513',
+                    darkerColor: '#6b3410',
+                    emoji: '📚'
+                };
+            }
+            // Maternity/Paternity Leave
+            else if (reasonLower.includes('maternity') || reasonLower.includes('paternity')) {
+                return {
+                    color: '#28a745',
+                    darkerColor: '#218838',
+                    emoji: '👶'
+                };
+            }
+            // Others (specify) - yellow for custom reasons
+            else {
+                return {
+                    color: '#ffc107',
+                    darkerColor: '#e0a800',
+                    emoji: '📝'
+                };
+            }
+        }
+        
+        // Convert availability data to FullCalendar events
+        const events = [];
+        
+        for (const [date, data] of Object.entries(availabilityData)) {
+            let title = data.is_available ? 'Available' : (data.is_pending ? 'Pending Leave' : 'Unavailable');
+            if (!data.is_available && data.notes) {
+                title += ': ' + data.notes;
+            }
+            
+            let reasonColor = null;
+            let reasonEmoji = null;
+            if (!data.is_available) {
+                // For pending leaves, use yellow/orange color
+                if (data.is_pending) {
+                    reasonColor = '#ffc107';
+                    reasonEmoji = '⏳';
+                } else if (data.is_approved) {
+                    // For approved leaves, always use red color
+                    reasonColor = '#dc3545';
+                    reasonEmoji = '📋';
+                } else {
+                    // Get color and emoji based on reason
+                    const reasonData = getReasonColorAndEmoji(data.notes || '');
+                    reasonColor = reasonData.color;
+                    reasonEmoji = reasonData.emoji;
+                }
+            }
+            
+            // Determine CSS class - pending leaves get special class
+            let className = data.is_available ? 'fc-event-available' : 
+                          (data.is_pending ? 'fc-event-pending-leave' : 'fc-event-unavailable');
+            
+            events.push({
+                title: title,
+                start: date,
+                allDay: true,
+                classNames: className,
+                extendedProps: {
+                    is_available: data.is_available,
+                    notes: data.notes || '',
+                    reasonColor: reasonColor,
+                    reasonEmoji: reasonEmoji,
+                    is_pending: data.is_pending || false,
+                    is_approved: data.is_approved || false,
+                    leave_request_id: data.leave_request_id || null
+                }
+            });
+        }
+        
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,dayGridWeek'
+            },
+            events: events,
+            selectable: false,
+            selectMirror: false,
+            eventDidMount: function(arg) {
+                // Ensure event is clickable
+                arg.el.style.cursor = 'pointer';
+                arg.el.style.pointerEvents = 'auto';
+                arg.el.setAttribute('role', 'button');
+                arg.el.setAttribute('tabindex', '0');
+                
+                // Add click handler directly to ensure it works - use capture phase to fire first
+                const clickHandler = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    
+                    {% if is_own_availability %}
+                    const dateStr = arg.event.startStr;
+                    const isAvailable = arg.event.extendedProps.is_available;
+                    
+                    // Use setTimeout to ensure modal is ready
+                    setTimeout(function() {
+                        if (isAvailable) {
+                            promptForUnavailableReason(dateStr);
+                        } else {
+                            removeAvailability(dateStr);
+                        }
+                    }, 0);
+                    {% else %}
+                    showAvailabilityDetails(arg.event);
+                    {% endif %}
+                };
+                
+                // Add both capture and bubble phase listeners to ensure it catches the click
+                arg.el.addEventListener('click', clickHandler, true); // Capture phase
+                arg.el.addEventListener('click', clickHandler, false); // Bubble phase
+                
+                // Also handle mousedown for better responsiveness
+                arg.el.addEventListener('mousedown', function(e) {
+                    e.stopPropagation();
+                }, true);
+                
+                // Apply reason-based color directly to unavailable events (but not pending leaves)
+                if (!arg.event.extendedProps.is_available && !arg.event.extendedProps.is_pending) {
+                    let reasonColor = arg.event.extendedProps.reasonColor;
+                    let darkerColor = '#c82333'; // Default darker red
+                    
+                    // For approved leaves, always use red
+                    if (arg.event.extendedProps.is_approved) {
+                        reasonColor = '#dc3545';
+                        darkerColor = '#c82333';
+                    } else if (!reasonColor) {
+                        // Get color and darker variant if not set
+                        const reasonData = getReasonColorAndEmoji(arg.event.extendedProps.notes || '');
+                        reasonColor = reasonData.color;
+                        darkerColor = reasonData.darkerColor;
+                        // Store in extendedProps for consistency
+                        arg.event.setExtendedProp('reasonColor', reasonColor);
+                        arg.event.setExtendedProp('reasonEmoji', reasonData.emoji);
+                    } else {
+                        // Get darker color for gradient
+                        const reasonData = getReasonColorAndEmoji(arg.event.extendedProps.notes || '');
+                        darkerColor = reasonData.darkerColor;
+                    }
+                    
+                    // Apply gradient background to the event element with !important
+                    arg.el.style.setProperty('background', `linear-gradient(135deg, ${reasonColor} 0%, ${darkerColor} 100%)`, 'important');
+                    arg.el.style.setProperty('background-image', `linear-gradient(135deg, ${reasonColor} 0%, ${darkerColor} 100%)`, 'important');
+                }
+                // Pending leaves use CSS class for styling (yellow gradient)
+            },
+            eventContent: function(arg) {
+                // Custom event rendering to ensure full cell coverage
+                if (arg.event.extendedProps.is_available) {
+                    // Available - no text, just background color
+                    return { html: '' };
+                } else if (arg.event.extendedProps.is_pending) {
+                    // Pending leave - show yellow/orange with pending message
+                    const notes = arg.event.extendedProps.notes || '';
+                    let content = `<div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; padding-top: 0.75rem; padding-bottom: 0.75rem; padding-left: 0.5rem; padding-right: 0.5rem; box-sizing: border-box; line-height: 1.3; border-radius: 8px;">`;
+                    content += `<div style="font-size: 1.1rem; margin-bottom: 0.2rem;">⏳</div>`;
+                    content += '<div style="font-size: 0.85rem; margin-bottom: 0.2rem; color: #343a40; font-weight: 700;">Pending Leave</div>';
+                    if (notes) {
+                        content += `<div style="font-size: 0.7rem; opacity: 0.9; color: #343a40;">${notes}</div>`;
+                    }
+                    content += '</div>';
+                    return { html: content };
+                } else {
+                    // Unavailable - show text with emoji and reason-based color
+                    const notes = arg.event.extendedProps.notes || '';
+                    let reasonColor = arg.event.extendedProps.reasonColor;
+                    let reasonEmoji = arg.event.extendedProps.reasonEmoji;
+                    let darkerColor = '#c82333'; // Default darker red
+                    
+                    // For approved leaves, always use red
+                    if (arg.event.extendedProps.is_approved) {
+                        reasonColor = '#dc3545';
+                        darkerColor = '#c82333';
+                        reasonEmoji = '📋';
+                    } else if (!reasonColor || !reasonEmoji) {
+                        // Get color, darker variant, and emoji if not already set
+                        const reasonData = getReasonColorAndEmoji(notes);
+                        reasonColor = reasonData.color;
+                        darkerColor = reasonData.darkerColor;
+                        reasonEmoji = reasonData.emoji;
+                    } else {
+                        const reasonData = getReasonColorAndEmoji(notes);
+                        darkerColor = reasonData.darkerColor;
+                    }
+                    
+                    let content = `<div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; font-weight: 600; padding-top: 0.75rem; padding-bottom: 0.75rem; padding-left: 0.5rem; padding-right: 0.5rem; box-sizing: border-box; line-height: 1.3; border-radius: 8px;">`;
+                    content += `<div style="font-size: 1.1rem; margin-bottom: 0.2rem;">${reasonEmoji}</div>`;
+                    content += '<div style="font-size: 0.9rem; margin-bottom: 0.2rem; color: white;">Unavailable</div>';
+                    if (notes) {
+                        content += `<div style="font-size: 0.75rem; opacity: 0.95; color: white;">${notes}</div>`;
+                    }
+                    content += '</div>';
+                    return { html: content };
+                }
+            },
+            dateClick: function(info) {
+                // Check if click was on an event element - if so, let eventClick handle it
+                const target = info.jsEvent.target;
+                const clickedOnEvent = target.closest('.fc-event') !== null;
+                
+                if (clickedOnEvent) {
+                    // Let eventClick handle it
+                    return;
+                }
+                
+                // Prevent default and stop propagation for date clicks
+                info.jsEvent.preventDefault();
+                info.jsEvent.stopPropagation();
+                
+                {% if is_own_availability %}
+                const dateStr = info.dateStr;
+                const existingEvent = events.find(e => e.start === dateStr);
+                
+                if (!existingEvent) {
+                    // No marker - set as available
+                    toggleAvailability(dateStr, true, '');
+                } else {
+                    // There's an event but we clicked on empty space - still allow toggling
+                    // This handles edge cases where event doesn't cover entire cell
+                    const isAvailable = existingEvent.extendedProps.is_available;
+                    if (isAvailable) {
+                        promptForUnavailableReason(dateStr);
+                    } else {
+                        removeAvailability(dateStr);
+                    }
+                }
+                {% else %}
+                // View-only mode - show event details for all dates
+                const dateStr = info.dateStr;
+                const existingEvent = events.find(e => e.start === dateStr);
+                if (existingEvent) {
+                    showAvailabilityDetails(existingEvent);
+                } else {
+                    // Show popup even for dates without events
+                    showAvailabilityDetailsForDate(dateStr);
+                }
+                {% endif %}
+            },
+            eventClick: function(info) {
+                // Prevent default and stop propagation to avoid triggering dateClick
+                info.jsEvent.preventDefault();
+                info.jsEvent.stopPropagation();
+                info.jsEvent.stopImmediatePropagation();
+                
+                {% if is_own_availability %}
+                // Allow clicking on existing events to toggle
+                const dateStr = info.event.startStr;
+                const isAvailable = info.event.extendedProps.is_available;
+                const isPending = info.event.extendedProps.is_pending || false;
+                
+                if (isPending) {
+                    // Pending leave - show message that it's awaiting approval
+                    customAlert('This leave request is pending approval from your Team Leader.', 'Pending Leave', '⏳');
+                } else if (isAvailable) {
+                    // Currently available - set as unavailable (prompt for reason)
+                    promptForUnavailableReason(dateStr);
+                } else {
+                    // Currently unavailable - remove marker (only if not pending)
+                    removeAvailability(dateStr);
+                }
+                {% else %}
+                // View-only mode - show event details
+                showAvailabilityDetails(info.event);
+                {% endif %}
+            }
+        });
+        
+        calendar.render();
+        
+        function toggleAvailability(dateStr, isAvailable, notes) {
+            fetch(`/users/${userId}/availability/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date: dateStr,
+                    is_available: isAvailable,
+                    reason: notes || '',  // Changed from 'notes' to 'reason'
+                    notes: notes || ''     // Keep for backward compatibility
+                })
+            })
+            .then(response => {
+                // Check if response is ok
+                if (!response.ok) {
+                    // Try to parse error response
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Server error');
+                    }).catch(() => {
+                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to update calendar
+                    location.reload();
+                } else {
+                    customAlert('Error: ' + (data.message || 'Unknown error'), 'Error', '⚠️');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                customAlert('Error: ' + error.message, 'Error', '⚠️');
+            });
+        }
+        
+        {% if is_own_availability %}
+        let currentDateStr = null;
+        let unavailableReasonModal = null;
+        let unavailableReasonSelect = null;
+        let othersReasonContainer = null;
+        let othersReasonInput = null;
+        let confirmUnavailableBtn = null;
+        
+        // Initialize modal elements (this code runs after DOMContentLoaded)
+        unavailableReasonModal = new bootstrap.Modal(document.getElementById('unavailableReasonModal'));
+        unavailableReasonSelect = document.getElementById('unavailableReasonSelect');
+        othersReasonContainer = document.getElementById('othersReasonContainer');
+        othersReasonInput = document.getElementById('othersReasonInput');
+        confirmUnavailableBtn = document.getElementById('confirmUnavailableBtn');
+        
+        // Show/hide others input based on selection
+        if (unavailableReasonSelect) {
+            unavailableReasonSelect.addEventListener('change', function() {
+                if (this.value === 'Others (specify)') {
+                    othersReasonContainer.style.display = 'block';
+                    setTimeout(() => othersReasonInput.focus(), 100);
+                } else {
+                    othersReasonContainer.style.display = 'none';
+                    othersReasonInput.value = '';
+                }
+            });
+        }
+        
+        // Handle confirm button
+        if (confirmUnavailableBtn) {
+            confirmUnavailableBtn.addEventListener('click', function() {
+                let reason = unavailableReasonSelect.value;
+                
+                if (!reason) {
+                    customAlert('Please select a reason for being unavailable.', 'Required', '⚠️');
+                    return;
+                }
+                
+                if (reason === 'Others (specify)') {
+                    const othersReason = othersReasonInput.value.trim();
+                    if (!othersReason) {
+                        customAlert('Please specify your reason.', 'Required', '⚠️');
+                        setTimeout(() => othersReasonInput.focus(), 100);
+                        return;
+                    }
+                    reason = othersReason;
+                }
+                
+                unavailableReasonModal.hide();
+                toggleAvailability(currentDateStr, false, reason);
+                
+                // Reset form
+                unavailableReasonSelect.value = '';
+                othersReasonContainer.style.display = 'none';
+                othersReasonInput.value = '';
+            });
+        }
+        
+        function promptForUnavailableReason(dateStr) {
+            currentDateStr = dateStr;
+            
+            // Ensure modal is initialized - use getOrCreateInstance for reliability
+            const modalElement = document.getElementById('unavailableReasonModal');
+            if (!modalElement) {
+                console.error('Modal element not found');
+                return;
+            }
+            
+            // Get or create modal instance - this ensures it's always ready
+            unavailableReasonModal = bootstrap.Modal.getOrCreateInstance(modalElement, {
+                backdrop: true,
+                keyboard: true,
+                focus: true
+            });
+            
+            // Reset form state
+            if (unavailableReasonSelect) {
+                unavailableReasonSelect.value = '';
+            }
+            if (othersReasonContainer) {
+                othersReasonContainer.style.display = 'none';
+            }
+            if (othersReasonInput) {
+                othersReasonInput.value = '';
+            }
+            
+            // Show modal immediately using requestAnimationFrame to ensure DOM is ready
+            requestAnimationFrame(function() {
+                try {
+                    unavailableReasonModal.show();
+                    // Focus on the select element after modal is shown
+                    if (unavailableReasonSelect) {
+                        setTimeout(function() {
+                            unavailableReasonSelect.focus();
+                        }, 150);
+                    }
+                } catch (e) {
+                    console.error('Error showing modal:', e);
+                    // Fallback: try direct show
+                    modalElement.classList.add('show');
+                    modalElement.style.display = 'block';
+                    document.body.classList.add('modal-open');
+                    const backdrop = document.createElement('div');
+                    backdrop.className = 'modal-backdrop fade show';
+                    document.body.appendChild(backdrop);
+                }
+            });
+        }
+        {% else %}
+        function showAvailabilityDetailsForDate(dateStr) {
+            // Format date nicely
+            let formattedDate;
+            try {
+                const dateParts = dateStr.split('-');
+                if (dateParts.length === 3) {
+                    const dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+                    formattedDate = dateObj.toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } else {
+                    formattedDate = dateStr;
+                }
+            } catch (e) {
+                formattedDate = dateStr;
+            }
+            
+            // Get the person's name
+            const personName = '{{ user.get_display_name() if user else musician.name }}';
+            
+            // Show popup for date with no availability set - use same format as Available status
+            const emoji = '😊';
+            const message = `Great news! ${personName} is available to work on ${formattedDate}.`;
+            const statusIcon = '✅';
+            
+            // Create clean HTML content matching the style of Available status
+            const content = `
+                <div style="text-align: center; padding: 1rem 0;">
+                    ${emoji ? `<div style="font-size: 4rem; margin-bottom: 1rem;">${emoji}</div>` : ''}
+                    <p style="color: #1a2e1a; font-size: 1.4rem; line-height: 1.8; margin: 0; font-weight: 500;">
+                        ${message}
+                    </p>
+                </div>
+            `;
+            
+            // Use showCustomModal to match the style of Available availability popup
+            showCustomModal('Availability Details', content, statusIcon, false);
+        }
+        
+        function showAvailabilityDetails(event) {
+            const isAvailable = event.extendedProps.is_available;
+            const notes = event.extendedProps.notes || '';
+            const statusIcon = isAvailable ? '✅' : '❌';
+            const statusColor = isAvailable ? '#9fb88c' : '#7a5a3a';
+            
+            // Get the person's name
+            const personName = '{{ user.get_display_name() if user else musician.name }}';
+            
+            // Format date nicely - handle both date objects and date strings
+            let formattedDate;
+            try {
+                let dateObj;
+                if (event.start instanceof Date) {
+                    dateObj = event.start;
+                } else if (event.startStr) {
+                    // Parse YYYY-MM-DD format
+                    const dateParts = event.startStr.split('-');
+                    if (dateParts.length === 3) {
+                        dateObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+                    } else {
+                        dateObj = new Date(event.startStr);
+                    }
+                } else {
+                    dateObj = new Date(event.start);
+                }
+                
+                // Check if date is valid
+                if (isNaN(dateObj.getTime())) {
+                    throw new Error('Invalid date');
+                }
+                
+                // Format full date
+                formattedDate = dateObj.toLocaleDateString('en-US', { 
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            } catch (e) {
+                // Fallback to original string if parsing fails
+                formattedDate = event.startStr || 'Unknown date';
+            }
+            
+            // Create human-readable message
+            let message;
+            let emoji = '';
+            if (isAvailable) {
+                emoji = '😊';
+                message = `Great news! ${personName} is available to work on ${formattedDate}.`;
+            } else {
+                emoji = '😢';
+                if (notes && notes.trim() && notes.trim().toLowerCase() !== 'no reason provided') {
+                    // Capitalize first letter of reason
+                    const capitalizedReason = notes.trim().charAt(0).toUpperCase() + notes.trim().slice(1);
+                    message = `I'm sorry, ${personName} is not available to work on ${formattedDate}. Reason: ${capitalizedReason}.`;
+                } else {
+                    message = `I'm sorry, ${personName} is not available to work on ${formattedDate}.`;
+                }
+            }
+            
+            // Create clean HTML content without inline styles that could be parsed incorrectly
+            const content = `
+                <div style="text-align: center; padding: 1rem 0;">
+                    ${emoji ? `<div style="font-size: 4rem; margin-bottom: 1rem;">${emoji}</div>` : ''}
+                    <p style="color: #1a2e1a; font-size: 1.4rem; line-height: 1.8; margin: 0; font-weight: 500;">
+                        ${message}
+                    </p>
+                </div>
+            `;
+            
+            // Use showCustomModal directly to avoid string parsing issues
+            showCustomModal('Availability Details', content, statusIcon, false);
+        }
+        {% endif %}
+        
+        function removeAvailability(dateStr) {
+            fetch(`/users/${userId}/availability/remove`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    date: dateStr
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to update calendar
+                    location.reload();
+                } else {
+                    customAlert('Error: ' + data.message, 'Error', '⚠️');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                customAlert('An error occurred while removing availability.', 'Error', '⚠️');
+            });
+        }
+    });
+</script>
+{% endblock %}
+

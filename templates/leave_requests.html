@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Requests - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{% if is_team_leader %}Pending Leave Requests{% else %}My Leave Requests{% endif %}</h1>
+</div>
+
+{% if requests %}
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        {% if is_team_leader %}
+                        <th>Requested By</th>
+                        {% endif %}
+                        <th>Date</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Requested At</th>
+                        {% if is_team_leader %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for request in requests %}
+                    <tr>
+                        {% if is_team_leader %}
+                        <td>{{ request.user.get_display_name() }}</td>
+                        {% endif %}
+                        <td>{{ request.date.strftime('%B %d, %Y') }}</td>
+                        <td>{{ request.reason }}</td>
+                        <td>
+                            {% if request.status == 'pending' %}
+                            Pending
+                            {% elif request.status == 'approved' %}
+                            Approved
+                            {% elif request.status == 'rejected' %}
+                            Rejected
+                            {% endif %}
+                        </td>
+                        <td>{{ request.requested_at.strftime('%B %d, %Y %I:%M %p') }}</td>
+                        {% if is_team_leader and request.status == 'pending' %}
+                        <td>
+                            <button class="btn btn-sm btn-success approve-btn" data-request-id="{{ request.id }}">
+                                Approve
+                            </button>
+                            <button class="btn btn-sm btn-danger reject-btn" data-request-id="{{ request.id }}">
+                                Reject
+                            </button>
+                        </td>
+                        {% elif is_team_leader %}
+                        <td>
+                            {% if request.reviewed_by %}
+                            Reviewed by {{ request.reviewer.get_display_name() if request.reviewer else 'Unknown' }}
+                            {% if request.reviewed_at %}
+                            on {{ request.reviewed_at.strftime('%B %d, %Y') }}
+                            {% endif %}
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    {% if is_team_leader %}
+    No pending leave requests at this time.
+    {% else %}
+    You haven't filed any leave requests yet.
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="rejectModalLabel">Reject Leave Request</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to reject this leave request?</p>
+                <div class="mb-3">
+                    <label for="rejectNotes" class="form-label">Optional Notes:</label>
+                    <textarea class="form-control" id="rejectNotes" rows="3" placeholder="Add any notes about the rejection..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmRejectBtn">Reject</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentRequestId = null;
+    const rejectModal = new bootstrap.Modal(document.getElementById('rejectModal'));
+    
+    // Approve buttons
+    document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const requestId = this.getAttribute('data-request-id');
+            if (confirm('Are you sure you want to approve this leave request?')) {
+                fetch(`/leave-requests/${requestId}/approve`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while approving the request.');
+                });
+            }
+        });
+    });
+    
+    // Reject buttons
+    document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentRequestId = this.getAttribute('data-request-id');
+            rejectModal.show();
+        });
+    });
+    
+    // Confirm reject
+    document.getElementById('confirmRejectBtn').addEventListener('click', function() {
+        const notes = document.getElementById('rejectNotes').value;
+        fetch(`/leave-requests/${currentRequestId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                review_notes: notes
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while rejecting the request.');
+        });
+        
+        rejectModal.hide();
+        document.getElementById('rejectNotes').value = '';
+    });
+});
+</script>
+{% endblock %}
+

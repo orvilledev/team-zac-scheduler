@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.date.label(class="form-label") }}
+                        {{ form.date(class="form-control", type="date") }}
+                        {% if form.date.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.date.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.time.label(class="form-label") }}
+                        {{ form.time(class="form-control", type="time") }}
+                        {% if form.time.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.time.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.location.label(class="form-label") }}
+                        {{ form.location(class="form-control") }}
+                        {% if form.location.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.location.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.purpose.label(class="form-label") }}
+                        {{ form.purpose(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.purpose.description }}</small>
+                        {% if form.purpose.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.purpose.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.notes.label(class="form-label") }}
+                        {{ form.notes(class="form-control", rows="4") }}
+                        {% if form.notes.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.notes.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% if practice %}{{ url_for('practice_detail', id=practice.id) }}{% else %}{{ url_for('practices') }}{% endif %}" class="btn btn-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

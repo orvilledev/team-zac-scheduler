@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+{% block title %}Job Aids - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .badge-tagalog {
+        background-color: #e67a2e !important;
+        color: white !important;
+    }
+    #search {
+        caret-color: transparent !important;
+    }
+    #search:focus {
+        caret-color: transparent !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Job Aids</h1>
+    <div>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('add_slide') }}" class="btn btn-primary">Add Job Aid</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" action="{{ url_for('slides') }}" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label for="search" class="form-label">What job aids are you looking for?</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="search" 
+                       name="search" 
+                       value="{{ search_query or '' }}"
+                       placeholder="Search by task...">
+            </div>
+            <div class="col-md-5">
+                <label for="artist" class="form-label">Contributor</label>
+                <input type="text" 
+                       class="form-control" 
+                       id="artist" 
+                       name="artist" 
+                       value="{{ selected_artist or '' }}"
+                       placeholder="Search by contributor...">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Search</button>
+            </div>
+            {% if search_query or selected_artist %}
+            <div class="col-12">
+                <a href="{{ url_for('slides') }}" class="btn btn-outline-secondary btn-sm">Clear All Filters</a>
+                <span class="ms-2 text-muted">
+                    {% if search_query %}
+                    Task: "<strong>{{ search_query }}</strong>"
+                    {% endif %}
+                    {% if selected_artist %}
+                    {% if search_query %} | {% endif %}Contributor: "<strong>{{ selected_artist }}</strong>"
+                    {% endif %}
+                </span>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+{% if slides %}
+<div class="table-responsive">
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                {% if current_user.is_admin() %}
+                <th style="width: 40px;">
+                    <input type="checkbox" id="selectAllCheckbox" title="Select all">
+                </th>
+                {% endif %}
+                <th>Task</th>
+                <th>Contributor</th>
+                <th>File Type</th>
+                {% if current_user.is_admin() %}
+                <th>Actions</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for slide in slides %}
+            <tr>
+                {% if current_user.is_admin() %}
+                <td>
+                    <input type="checkbox" class="slide-checkbox" value="{{ slide.id }}">
+                </td>
+                {% endif %}
+                <td><strong>{{ slide.title.replace('_', ' ') }}</strong></td>
+                <td>{{ slide.artist or '-' }}</td>
+                <td>
+                    {% if slide.file_type %}
+                        {% if slide.file_type == 'word' %}
+                            <span class="badge d-inline-block" style="background-color: #2B579A; color: white; font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-word" style="font-size: 0.75em;"></i> Word
+                            </span>
+                        {% elif slide.file_type == 'excel' %}
+                            <span class="badge d-inline-block" style="background-color: #217346; color: white; font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-excel" style="font-size: 0.75em;"></i> Excel
+                            </span>
+                        {% elif slide.file_type == 'powerpoint' %}
+                            <span class="badge d-inline-block" style="background-color: #D04423; color: white; font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-powerpoint" style="font-size: 0.75em;"></i> PowerPoint
+                            </span>
+                        {% elif slide.file_type == 'csv' %}
+                            <span class="badge d-inline-block bg-warning text-dark" style="font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-csv" style="font-size: 0.75em;"></i> CSV
+                            </span>
+                        {% elif slide.file_type == 'image' %}
+                            <span class="badge d-inline-block" style="background-color: #9B59B6; color: white; font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-image" style="font-size: 0.75em;"></i> Image
+                            </span>
+                        {% elif slide.file_type == 'pdf' %}
+                            <span class="badge d-inline-block" style="background-color: #E60012; color: white; font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-pdf" style="font-size: 0.75em;"></i> PDF
+                            </span>
+                        {% elif slide.file_type == 'txt' %}
+                            <span class="badge d-inline-block bg-secondary" style="font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file-lines" style="font-size: 0.75em;"></i> Txt
+                            </span>
+                        {% else %}
+                            <span class="badge d-inline-block bg-dark" style="font-size: 0.875em; padding: 0.25em 0.5em; width: fit-content; min-width: 80px;">
+                                <i class="fa-solid fa-file" style="font-size: 0.75em;"></i> {{ slide.file_type|title }}
+                            </span>
+                        {% endif %}
+                        {% if slide.file_path %}
+                        <br><small>
+                            <a href="{{ url_for('view_slide', id=slide.id) }}" class="text-info">About</a> | 
+                            <a href="{{ url_for('download_slide', id=slide.id) }}" class="text-primary">Download</a>
+                        </small>
+                        {% endif %}
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                {% if current_user.is_admin() %}
+                <td>
+                    <a href="{{ url_for('edit_slide', id=slide.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST" action="{{ url_for('delete_slide', id=slide.id) }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this job aid?');">
+                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if current_user.is_admin() %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.slide-checkbox');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    
+    function updateSelectAllState() {
+        if (checkboxes.length === 0) return;
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        const someChecked = Array.from(checkboxes).some(cb => cb.checked);
+        selectAllCheckbox.checked = allChecked;
+        selectAllCheckbox.indeterminate = someChecked && !allChecked;
+    }
+    
+    // Individual checkbox change
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            updateSelectAllState();
+        });
+    });
+    
+    // Select all checkbox
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    }
+    
+    // Initialize
+    updateSelectAllState();
+});
+</script>
+{% endif %}
+{% else %}
+<div class="alert alert-{% if search_query %}warning{% else %}info{% endif %}">
+    {% if search_query %}
+    No job aids found matching "{{ search_query }}". <a href="{{ url_for('slides') }}">View all job aids</a>
+    {% else %}
+    No job aids added yet. {% if current_user.is_admin() %}<a href="{{ url_for('add_slide') }}">Add the first job aid</a>{% endif %}
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+

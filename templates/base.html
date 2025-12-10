@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Praise & Worship Scheduler{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        #navbarDropdown::before,
+        #navbarDropdown img,
+        #navbarDropdown i,
+        #navbarDropdown .fa,
+        #navbarDropdown .fas,
+        #navbarDropdown .profile-picture,
+        #navbarDropdown .avatar,
+        .nav-item.dropdown:has(#navbarDropdown) img,
+        .nav-item.dropdown:has(#navbarDropdown) .profile-picture,
+        .nav-item.dropdown:has(#navbarDropdown) .avatar {
+            display: none !important;
+        }
+        
+        /* Home and Work dropdown hover functionality */
+        #homeDropdown,
+        #workDropdown {
+            position: relative;
+        }
+        
+        #homeDropdown + .dropdown-menu,
+        #workDropdown + .dropdown-menu {
+            display: none;
+        }
+        
+        #homeDropdown:hover + .dropdown-menu,
+        #homeDropdown + .dropdown-menu:hover,
+        #workDropdown:hover + .dropdown-menu,
+        #workDropdown + .dropdown-menu:hover {
+            display: block !important;
+            margin-top: 0;
+        }
+        
+        .nav-item.dropdown:hover > .dropdown-menu {
+            display: block !important;
+        }
+        
+        /* Reduce size of Work dropdown menu */
+        #workDropdown + .dropdown-menu,
+        .nav-item.dropdown:has(#workDropdown) .dropdown-menu {
+            padding: 0.25rem 0;
+            min-width: auto;
+            font-size: 0.9rem;
+        }
+        
+        #workDropdown + .dropdown-menu .dropdown-item,
+        .nav-item.dropdown:has(#workDropdown) .dropdown-menu .dropdown-item {
+            padding: 0.4rem 1rem;
+        }
+        
+        /* Alternate coloring for Work dropdown items */
+        #workDropdown + .dropdown-menu .dropdown-item:nth-child(odd),
+        .nav-item.dropdown:has(#workDropdown) .dropdown-menu .dropdown-item:nth-child(odd) {
+            background-color: #f8f9fa;
+        }
+        
+        #workDropdown + .dropdown-menu .dropdown-item:nth-child(even),
+        .nav-item.dropdown:has(#workDropdown) .dropdown-menu .dropdown-item:nth-child(even) {
+            background-color: #ffffff;
+        }
+        
+        #workDropdown + .dropdown-menu .dropdown-item:hover,
+        .nav-item.dropdown:has(#workDropdown) .dropdown-menu .dropdown-item:hover {
+            background-color: #ced4da !important;
+        }
+        
+        /* Remove flash/glow effects from all nav items */
+        .navbar-nav .nav-link::before,
+        .navbar-nav .nav-link::after {
+            display: none !important;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            transform: none !important;
+            text-shadow: none !important;
+            letter-spacing: normal !important;
+        }
+        
+        /* Ensure user dropdown menu is wide enough */
+        #navbarDropdown + .dropdown-menu,
+        .nav-item.dropdown:has(#navbarDropdown) .dropdown-menu {
+            min-width: 120px;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+</head>
+<body {% if current_user.is_authenticated %}data-user-id="{{ current_user.id }}"{% endif %}>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="homeDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-home"></i>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="homeDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('fba_copy') }}">The Team</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="workDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Work
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="workDropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('slides') }}">Job Aids</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('tasks') }}">My Tasks</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('tools') }}">Tools</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('my_profile') }}">Profile</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('journal') }}">Mood Board</a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.is_authenticated and current_user.is_admin() %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('users') }}">Users</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('permissions') }}">Permissions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('announcements') }}">Announcements</a>
+                    </li>
+                    {% endif %}
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{{ url_for('notifications_page') }}">
+                            <i class="fas fa-bell"></i>
+                            {% if unread_notification_count > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ unread_notification_count }}
+                            </span>
+                            {% endif %}
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <button class="btn btn-link nav-link" id="darkModeToggle" title="Toggle dark mode">
+                            <span id="darkModeIcon">🌙</span>
+                        </button>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            {{ current_user.get_display_name() }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Custom Modern Modal -->
+    <div class="modal fade" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                <div class="modal-header" style="border-bottom: 2px solid #e0e0e0; background: linear-gradient(135deg, #1a2e3f 0%, #2d4a6f 50%, #3d6b7f 100%); border-radius: 15px 15px 0 0;">
+                    <h5 class="modal-title" id="customModalLabel" style="color: white; font-weight: 600;">
+                        <span id="modalIcon" style="margin-right: 10px; font-size: 1.5rem;">ℹ️</span>
+                        <span id="modalTitle">Information</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 2rem; background: #ffffff;">
+                    <div id="modalContent" style="color: #1a2e3f; line-height: 1.8;">
+                        <!-- Content will be inserted here -->
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 2px solid #e0e0e0; background: #ffffff; border-radius: 0 0 15px 15px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" id="modalCancelBtn" style="display: none;">Cancel</button>
+                    <button type="button" class="btn" id="modalOkBtn" style="background: linear-gradient(135deg, #2d4a6f 0%, #1e3a5f 100%); border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+    
+    {% if current_user.is_authenticated %}
+    <script>
+        // Function to show leave request popup (must be defined before loadNotifications)
+        window.showLeaveRequestPopup = function(leaveRequestId) {
+            console.log('showLeaveRequestPopup called with ID:', leaveRequestId);
+            if (!leaveRequestId) {
+                console.error('No leave request ID provided');
+                customAlert('Error: Leave request ID is missing.', 'Error', '⚠️');
+                return;
+            }
+            
+            fetch(`/leave-requests/${leaveRequestId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch leave request');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        const request = data.request;
+                        const formattedDate = new Date(request.date + 'T00:00:00').toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        
+                        const content = `
+                            <div style="text-align: center; padding: 1rem 0;">
+                                <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
+                                <p style="color: #1a2e1a; font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;">
+                                    <strong>${request.user_name}</strong> filed a leave request
+                                </p>
+                                <div style="background: #f0f0f0; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: left;">
+                                    <div style="margin-bottom: 0.5rem;"><strong>Date:</strong> ${formattedDate}</div>
+                                    <div><strong>Reason:</strong> ${request.reason}</div>
+                                </div>
+                                <div id="rejectReasonContainer" style="display: none; margin-bottom: 1rem;">
+                                    <label for="rejectReasonInput" style="display: block; margin-bottom: 0.5rem; color: #1a2e1a; font-weight: 500;">Reason for rejection:</label>
+                                    <textarea id="rejectReasonInput" class="form-control" rows="3" placeholder="Enter reason for rejection..." style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #6b7d4a;"></textarea>
+                                </div>
+                                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                                    <button id="approveLeaveBtn" class="btn" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); border: none; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 500;">
+                                        Approve ✅
+                                    </button>
+                                    <button id="rejectLeaveBtn" class="btn" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 500;">
+                                        Reject ❌
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Show modal with custom buttons
+                        const modalEl = document.getElementById('customModal');
+                        if (!modalEl) {
+                            console.error('Custom modal element not found');
+                            customAlert('Error: Modal element not found.', 'Error', '⚠️');
+                            return;
+                        }
+                        
+                        const modal = new bootstrap.Modal(modalEl);
+                        document.getElementById('modalTitle').textContent = 'Leave Request Approval';
+                        document.getElementById('modalIcon').textContent = '📋';
+                        document.getElementById('modalContent').innerHTML = content;
+                        document.getElementById('modalOkBtn').style.display = 'none';
+                        document.getElementById('modalCancelBtn').style.display = 'none';
+                        
+                        // Remove any existing event listeners by cloning and replacing buttons
+                        const approveBtn = document.getElementById('approveLeaveBtn');
+                        const rejectBtn = document.getElementById('rejectLeaveBtn');
+                        
+                        // Clone buttons to remove old listeners
+                        const newApproveBtn = approveBtn.cloneNode(true);
+                        const newRejectBtn = rejectBtn.cloneNode(true);
+                        approveBtn.parentNode.replaceChild(newApproveBtn, approveBtn);
+                        rejectBtn.parentNode.replaceChild(newRejectBtn, rejectBtn);
+                        
+                        // Handle approve button
+                        document.getElementById('approveLeaveBtn').addEventListener('click', function() {
+                            fetch(`/leave-requests/${leaveRequestId}/approve`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    modal.hide();
+                                    customAlert('Leave request approved successfully.', 'Success', '✅');
+                                    if (typeof loadNotifications === 'function') {
+                                        loadNotifications();
+                                    }
+                                    setTimeout(() => location.reload(), 1500);
+                                } else {
+                                    customAlert('Error: ' + result.message, 'Error', '⚠️');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                customAlert('An error occurred while approving the request.', 'Error', '⚠️');
+                            });
+                        });
+                        
+                        // Handle reject button
+                        let rejectMode = false;
+                        document.getElementById('rejectLeaveBtn').addEventListener('click', function() {
+                            if (!rejectMode) {
+                                // Show reject reason input
+                                document.getElementById('rejectReasonContainer').style.display = 'block';
+                                this.textContent = 'Confirm Rejection ❌';
+                                rejectMode = true;
+                                document.getElementById('rejectReasonInput').focus();
+                            } else {
+                                // Actually reject
+                                const reason = document.getElementById('rejectReasonInput').value.trim();
+                                fetch(`/leave-requests/${leaveRequestId}/reject`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        review_notes: reason
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(result => {
+                                    if (result.success) {
+                                        modal.hide();
+                                        customAlert('Leave request rejected.', 'Rejected', '❌');
+                                        if (typeof loadNotifications === 'function') {
+                                            loadNotifications();
+                                        }
+                                        setTimeout(() => location.reload(), 1500);
+                                    } else {
+                                        customAlert('Error: ' + result.message, 'Error', '⚠️');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    customAlert('An error occurred while rejecting the request.', 'Error', '⚠️');
+                                });
+                            }
+                        });
+                        
+                        modal.show();
+                    } else {
+                        customAlert('Error loading leave request details.', 'Error', '⚠️');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    customAlert('An error occurred while loading leave request: ' + error.message, 'Error', '⚠️');
+                });
+        };
+        
+        // Load notifications on page load
+        function loadNotifications() {
+            fetch('/notifications')
+                .then(response => response.json())
+                .then(data => {
+                    const badge = document.getElementById('notificationBadge');
+                    const itemsContainer = document.getElementById('notificationItems');
+                    
+                    // Update badge
+                    if (data.unread_count > 0) {
+                        badge.textContent = data.unread_count > 99 ? '99+' : data.unread_count;
+                        badge.style.display = 'block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                    
+                    // Update notification items
+                    if (data.notifications.length === 0) {
+                        itemsContainer.innerHTML = '<div class="px-3 py-2 text-muted text-center">No notifications</div>';
+                    } else {
+                        itemsContainer.innerHTML = data.notifications.map(notif => {
+                            const readClass = notif.is_read ? '' : 'bg-light';
+                            const leaveRequestId = notif.leave_request_id || '';
+                            return `
+                                <li>
+                                    <a class="dropdown-item ${readClass} notification-item" href="${notif.link}" 
+                                       data-notification-id="${notif.id}" 
+                                       data-notification-type="${notif.type || ''}"
+                                       data-leave-request-id="${leaveRequestId}">
+                                        <div class="d-flex justify-content-between">
+                                            <div class="flex-grow-1">
+                                                <div class="fw-bold">${notif.text}</div>
+                                                <small class="text-muted">${notif.time_ago}</small>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </li>
+                            `;
+                        }).join('');
+                        
+                        // Add click handlers to mark as read and handle leave requests
+                        document.querySelectorAll('.notification-item').forEach(item => {
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                const notifId = this.getAttribute('data-notification-id');
+                                const notifType = this.getAttribute('data-notification-type');
+                                const leaveRequestId = this.getAttribute('data-leave-request-id');
+                                
+                                // Handle leave request notifications - show popup
+                                if (notifType === 'leave_request' && leaveRequestId) {
+                                    console.log('Leave request notification clicked:', leaveRequestId);
+                                    // Mark as read
+                                    if (this.classList.contains('bg-light')) {
+                                        fetch(`/notifications/${notifId}/read`, {
+                                            method: 'POST',
+                                            headers: {
+                                                'Content-Type': 'application/json'
+                                            }
+                                        }).then(() => {
+                                            this.classList.remove('bg-light');
+                                            loadNotifications();
+                                        });
+                                    }
+                                    
+                                    // Show leave request popup
+                                    if (typeof showLeaveRequestPopup === 'function') {
+                                        showLeaveRequestPopup(leaveRequestId);
+                                    } else {
+                                        console.error('showLeaveRequestPopup function not found');
+                                        customAlert('Error: Popup function not available. Please refresh the page.', 'Error', '⚠️');
+                                    }
+                                    return;
+                                }
+                                
+                                // Handle other notifications normally
+                                if (notifId && this.classList.contains('bg-light')) {
+                                    // Mark as read if unread
+                                    fetch(`/notifications/${notifId}/read`, {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json'
+                                        }
+                                    }).then(() => {
+                                        // Remove bg-light class after marking as read
+                                        this.classList.remove('bg-light');
+                                        // Reload notifications to update badge
+                                        loadNotifications();
+                                        
+                                        // Navigate to link if it's not '#'
+                                        const link = this.getAttribute('href');
+                                        if (link && link !== '#') {
+                                            window.location.href = link;
+                                        }
+                                    });
+                                } else {
+                                    // Navigate to link if already read
+                                    const link = this.getAttribute('href');
+                                    if (link && link !== '#') {
+                                        window.location.href = link;
+                                    }
+                                }
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading notifications:', error);
+                });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadNotifications();
+            // Refresh notifications every 30 seconds
+            setInterval(loadNotifications, 30000);
+        });
+    </script>
+    {% endif %}
+    
+    {% if current_user.is_authenticated %}
+    <!-- Floating Chat Button -->
+    <div id="chatButton" class="floating-chat-button" title="Open Chat">
+        <i class="fas fa-comments"></i>
+        <span class="chat-badge" id="chatBadge" style="display: none;">0</span>
+    </div>
+    
+    <!-- Chat Modal -->
+    <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content chat-modal-content">
+                <div class="modal-header chat-modal-header">
+                    <h5 class="modal-title" id="chatModalLabel">
+                        <i class="fas fa-comments"></i> <span id="chatTitle">Team Chat</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body chat-modal-body" id="chatModalBody">
+                    <div class="chat-messages-container" id="chatMessagesContainer">
+                        <div class="empty-chat">
+                            <i class="fas fa-comment-slash"></i>
+                            <p>Loading messages...</p>
+                        </div>
+                    </div>
+                    <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                        Sending...
+                    </div>
+                </div>
+                <div class="modal-footer chat-modal-footer">
+                    <div class="chat-input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            class="chat-input" 
+                            placeholder="Type your message here... (Press Enter to send, Shift+Enter for new line)"
+                            rows="2"
+                        ></textarea>
+                    </div>
+                    <button id="sendButton" class="chat-send-btn">
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <style>
+        .floating-chat-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2C5F6F 0%, #40A5A5 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(44, 95, 111, 0.4);
+            z-index: 1000;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .floating-chat-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(44, 95, 111, 0.6);
+        }
+        
+        .chat-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #dc3545;
+            color: white;
+            border-radius: 50%;
+            min-width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 0 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        .chat-badge.hidden {
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        .chat-modal-content {
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-modal-header {
+            background: linear-gradient(135deg, #2C5F6F 0%, #40A5A5 100%);
+            color: white;
+            border-bottom: none;
+        }
+        
+        .chat-modal-body {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .chat-messages-container {
+            flex: 1;
+            overflow-y: auto;
+            background: #f5f5f0;
+            padding: 1.5rem;
+            min-height: 300px;
+        }
+        
+        .chat-modal-footer {
+            border-top: 2px solid #e0e0e0;
+            padding: 1rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        
+        .chat-input-wrapper {
+            flex: 1;
+        }
+        
+        .chat-input {
+            width: 100%;
+            min-height: 60px;
+            max-height: 150px;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+        
+        .chat-input:focus {
+            outline: none;
+            border-color: #2C5F6F;
+        }
+        
+        .chat-send-btn {
+            background: linear-gradient(135deg, #2C5F6F 0%, #40A5A5 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            height: fit-content;
+        }
+        
+        .chat-send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(44, 95, 111, 0.3);
+        }
+        
+        .chat-send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 70%;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-in;
+            display: flex;
+            gap: 0.75rem;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message.own {
+            background: linear-gradient(135deg, #2C5F6F 0%, #40A5A5 100%);
+            color: white;
+            margin-left: auto;
+            margin-right: 0;
+            flex-direction: row-reverse;
+        }
+        
+        .message.other {
+            background: white;
+            color: #333;
+            margin-left: 0;
+            margin-right: auto;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            background: linear-gradient(135deg, #2C5F6F 0%, #40A5A5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1rem;
+            overflow: hidden;
+        }
+        
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .message-content-wrapper {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+        }
+        
+        .message.own .message-header {
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .message.other .message-header {
+            color: #666;
+        }
+        
+        .message-username {
+            font-weight: 600;
+        }
+        
+        .message-time {
+            opacity: 0.7;
+            font-size: 0.75rem;
+        }
+        
+        .message-content {
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+        
+        .empty-chat {
+            text-align: center;
+            padding: 3rem;
+            color: #999;
+        }
+        
+        .empty-chat i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        .chat-messages-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .chat-messages-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .chat-messages-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        .chat-messages-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        @media (max-width: 768px) {
+            .floating-chat-button {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .chat-modal-content {
+                height: 90vh;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+            
+            .chat-modal-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .chat-send-btn {
+                width: 100%;
+            }
+        }
+    </style>
+    
+    <script>
+        // Chat functionality
+        let chatPollInterval = null;
+        let unreadPollInterval = null;
+        let lastChatMessageTimestamp = null;
+        let lastViewedTimestamp = null;
+        let chatModal = null;
+        let currentRecipientId = null;
+        let currentRecipientName = null;
+        let isPrivateChat = false;
+        const chatBadge = document.getElementById('chatBadge');
+        
+        // Get last viewed timestamp from localStorage
+        function getLastViewedTimestamp() {
+            const stored = localStorage.getItem('chatLastViewed');
+            return stored ? new Date(stored) : null;
+        }
+        
+        // Save last viewed timestamp to localStorage
+        function saveLastViewedTimestamp() {
+            localStorage.setItem('chatLastViewed', new Date().toISOString());
+            lastViewedTimestamp = new Date();
+        }
+        
+        // Update badge count
+        function updateBadgeCount(count) {
+            if (!chatBadge) return;
+            
+            if (count > 0) {
+                chatBadge.textContent = count > 99 ? '99+' : count.toString();
+                chatBadge.style.display = 'flex';
+            } else {
+                chatBadge.style.display = 'none';
+            }
+        }
+        
+        // Check for unread messages
+        function checkUnreadMessages() {
+            const lastViewed = getLastViewedTimestamp();
+            
+            fetch('/api/chat/messages')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.messages) {
+                        let unreadCount = 0;
+                        
+                        data.messages.forEach(message => {
+                            // Count messages that are not from current user
+                            if (!message.is_own) {
+                                const messageDate = new Date(message.created_at);
+                                
+                                // If we have a last viewed timestamp, only count messages after it
+                                if (lastViewed) {
+                                    if (messageDate > lastViewed) {
+                                        unreadCount++;
+                                    }
+                                } else {
+                                    // If no last viewed timestamp, count all messages from others
+                                    unreadCount++;
+                                }
+                            }
+                        });
+                        
+                        updateBadgeCount(unreadCount);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking unread messages:', error);
+                });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatButton = document.getElementById('chatButton');
+            const chatModalElement = document.getElementById('chatModal');
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+            const chatMessagesContainer = document.getElementById('chatMessagesContainer');
+            const typingIndicator = document.getElementById('typingIndicator');
+            
+            if (!chatButton || !chatModalElement) return;
+            
+            chatModal = new bootstrap.Modal(chatModalElement);
+            
+            // Initialize last viewed timestamp
+            lastViewedTimestamp = getLastViewedTimestamp();
+            
+            // Check for unread messages on page load
+            checkUnreadMessages();
+            
+            // Start polling for unread messages (even when modal is closed)
+            startUnreadPolling();
+            
+            // Open chat modal when button is clicked
+            chatButton.addEventListener('click', function() {
+                // Always open group chat by default
+                currentRecipientId = null;
+                currentRecipientName = null;
+                isPrivateChat = false;
+                updateChatTitle();
+                
+                chatModal.show();
+                loadChatMessages();
+                startChatPolling();
+                // Mark as viewed when opening
+                saveLastViewedTimestamp();
+                updateBadgeCount(0);
+            });
+            
+            // Load messages when modal is shown
+            chatModalElement.addEventListener('shown.bs.modal', function() {
+                loadChatMessages();
+                startChatPolling();
+                if (messageInput) messageInput.focus();
+                // Mark as viewed when modal opens
+                saveLastViewedTimestamp();
+                updateBadgeCount(0);
+            });
+            
+            // Stop polling when modal is hidden
+            chatModalElement.addEventListener('hidden.bs.modal', function() {
+                stopChatPolling();
+                // Mark as viewed when closing
+                saveLastViewedTimestamp();
+                updateBadgeCount(0);
+            });
+            
+            // Send message
+            if (sendButton) {
+                sendButton.addEventListener('click', sendChatMessage);
+            }
+            
+            if (messageInput) {
+                messageInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+                
+                messageInput.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = Math.min(this.scrollHeight, 150) + 'px';
+                });
+            }
+            
+            function loadChatMessages() {
+                const url = currentRecipientId 
+                    ? `/api/chat/messages?recipient_id=${currentRecipientId}`
+                    : '/api/chat/messages';
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && chatMessagesContainer) {
+                            chatMessagesContainer.innerHTML = '';
+                            
+                            if (data.messages && data.messages.length > 0) {
+                                data.messages.forEach(message => {
+                                    addChatMessage(message);
+                                });
+                                
+                                if (data.latest_timestamp) {
+                                    lastChatMessageTimestamp = data.latest_timestamp;
+                                }
+                                scrollChatToBottom();
+                            } else {
+                                chatMessagesContainer.innerHTML = `
+                                    <div class="empty-chat">
+                                        <i class="fas fa-comment-slash"></i>
+                                        <p>No messages yet. Start the conversation!</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading messages:', error);
+                    });
+            }
+            
+            function sendChatMessage() {
+                if (!messageInput) return;
+                const content = messageInput.value.trim();
+                if (!content) return;
+                
+                messageInput.disabled = true;
+                if (sendButton) sendButton.disabled = true;
+                if (typingIndicator) typingIndicator.style.display = 'block';
+                
+                const payload = { 
+                    content: content,
+                    recipient_id: currentRecipientId || null
+                };
+                
+                fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        messageInput.value = '';
+                        messageInput.style.height = 'auto';
+                        addChatMessage(data.message);
+                        lastChatMessageTimestamp = data.message.created_at;
+                        scrollChatToBottom();
+                    } else {
+                        alert('Error sending message: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error sending message. Please try again.');
+                })
+                .finally(() => {
+                    if (messageInput) {
+                        messageInput.disabled = false;
+                        messageInput.focus();
+                    }
+                    if (sendButton) sendButton.disabled = false;
+                    if (typingIndicator) typingIndicator.style.display = 'none';
+                });
+            }
+            
+            function addChatMessage(message) {
+                if (!chatMessagesContainer) return;
+                
+                const emptyChat = chatMessagesContainer.querySelector('.empty-chat');
+                if (emptyChat) {
+                    emptyChat.remove();
+                }
+                
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${message.is_own ? 'own' : 'other'}`;
+                messageDiv.setAttribute('data-message-id', message.id);
+                
+                const date = new Date(message.created_at);
+                const timeStr = date.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                });
+                
+                // Get avatar HTML
+                let avatarHtml = '';
+                if (message.profile_picture) {
+                    avatarHtml = `<img src="/static/${escapeHtml(message.profile_picture)}" alt="${escapeHtml(message.username)}" onerror="this.parentElement.innerHTML='${escapeHtml(message.username.charAt(0).toUpperCase())}'">`;
+                } else {
+                    avatarHtml = escapeHtml(message.username.charAt(0).toUpperCase());
+                }
+                
+                messageDiv.innerHTML = `
+                    <div class="message-avatar">${avatarHtml}</div>
+                    <div class="message-content-wrapper">
+                        <div class="message-header">
+                            <span class="message-username">${escapeHtml(message.username)}</span>
+                            <span class="message-time" data-timestamp="${message.created_at}">${timeStr}</span>
+                        </div>
+                        <div class="message-content">${escapeHtml(message.content)}</div>
+                    </div>
+                `;
+                
+                chatMessagesContainer.appendChild(messageDiv);
+            }
+            
+            function startChatPolling() {
+                if (chatPollInterval) return;
+                
+                chatPollInterval = setInterval(() => {
+                    let url = '';
+                    if (currentRecipientId) {
+                        url = lastChatMessageTimestamp 
+                            ? `/api/chat/messages?recipient_id=${currentRecipientId}&since=${encodeURIComponent(lastChatMessageTimestamp)}`
+                            : `/api/chat/messages?recipient_id=${currentRecipientId}`;
+                    } else {
+                        url = lastChatMessageTimestamp 
+                            ? `/api/chat/messages?since=${encodeURIComponent(lastChatMessageTimestamp)}`
+                            : '/api/chat/messages';
+                    }
+                    
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.messages && data.messages.length > 0 && chatMessagesContainer) {
+                                let hasNewMessages = false;
+                                data.messages.forEach(message => {
+                                    const existing = chatMessagesContainer.querySelector(`[data-message-id="${message.id}"]`);
+                                    if (!existing) {
+                                        addChatMessage(message);
+                                        hasNewMessages = true;
+                                    }
+                                });
+                                
+                                if (data.latest_timestamp) {
+                                    lastChatMessageTimestamp = data.latest_timestamp;
+                                }
+                                
+                                if (hasNewMessages) {
+                                    scrollChatToBottom();
+                                }
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error polling messages:', error);
+                        });
+                }, 2000);
+            }
+            
+            function updateChatTitle() {
+                const chatTitle = document.getElementById('chatTitle');
+                if (chatTitle) {
+                    chatTitle.textContent = 'Team Chat';
+                }
+            }
+            
+            function stopChatPolling() {
+                if (chatPollInterval) {
+                    clearInterval(chatPollInterval);
+                    chatPollInterval = null;
+                }
+            }
+            
+            function startUnreadPolling() {
+                if (unreadPollInterval) return;
+                
+                // Poll for unread messages every 5 seconds
+                unreadPollInterval = setInterval(() => {
+                    // Only check if modal is not open
+                    if (!chatModalElement.classList.contains('show')) {
+                        checkUnreadMessages();
+                    }
+                }, 5000);
+            }
+            
+            function stopUnreadPolling() {
+                if (unreadPollInterval) {
+                    clearInterval(unreadPollInterval);
+                    unreadPollInterval = null;
+                }
+            }
+            
+            function scrollChatToBottom() {
+                if (chatMessagesContainer) {
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                }
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>
+

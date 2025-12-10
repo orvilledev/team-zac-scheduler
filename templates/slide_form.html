@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control") }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.title.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.artist.label(class="form-label") }}
+                        {{ form.artist(class="form-select") }}
+                        {% if form.artist.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.artist.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="4") }}
+                        <small class="form-text text-muted">{{ form.description.description }}</small>
+                        {% if form.description.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.description.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.file_type.label(class="form-label") }}
+                        {{ form.file_type(class="form-select") }}
+                        <small class="form-text text-muted">{{ form.file_type.description }}</small>
+                        {% if form.file_type.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.file_type.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.slide_file.label(class="form-label") }}
+                        {{ form.slide_file(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.slide_file.description }}</small>
+                        {% if slide and slide.file_path %}
+                            <small class="form-text text-success">Current file: {{ slide.file_path }}</small>
+                        {% endif %}
+                        {% if form.slide_file.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.slide_file.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.file_path.label(class="form-label") }}
+                        {% if slide and slide.file_path %}
+                            {% set title_clean = slide.title.replace('_', ' ') %}
+                            {% set file_ext = slide.file_path.rsplit('.', 1)[1] if '.' in slide.file_path else '' %}
+                            <input type="text" class="form-control" name="file_path" value="{{ title_clean }} Job Aid.{{ file_ext }}" readonly>
+                        {% else %}
+                            {{ form.file_path(class="form-control") }}
+                        {% endif %}
+                        <small class="form-text text-muted">{{ form.file_path.description }}</small>
+                        {% if form.file_path.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.file_path.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('slides') }}" class="btn btn-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

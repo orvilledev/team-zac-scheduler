@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: team-zac-scheduler
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn_config.py app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: team-zac-db
+          property: connectionString
+      - key: SQLALCHEMY_TRACK_MODIFICATIONS
+        value: false
+      - key: WTF_CSRF_ENABLED
+        value: true
+
+databases:
+  - name: team-zac-db
+    databaseName: team_zac
+    user: team_zac_user
+    plan: free
+

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Customize Profile - {{ musician.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .customization-container {
+        max-width: 900px;
+        margin: 2rem auto;
+    }
+    
+    .customization-section {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .customization-section h3 {
+        color: #1a2e3f;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #3d6b7f;
+    }
+    
+    .color-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        border: 2px solid #ddd;
+        display: inline-block;
+        margin-left: 10px;
+        vertical-align: middle;
+    }
+    
+    .theme-preview {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .theme-option {
+        border: 2px solid #ddd;
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .theme-option:hover {
+        border-color: #1a2e3f;
+        transform: translateY(-3px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    
+    .theme-option.selected {
+        border-color: #1a2e3f;
+        background: #f0f8ff;
+    }
+    
+    .preview-box {
+        background: #f8f9fa;
+        border: 2px dashed #ddd;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+        min-height: 200px;
+    }
+    
+    .help-text {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+        font-style: italic;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container customization-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>🎨 Customize Your Profile</h1>
+        <a href="{{ url_for('view_musician_profile', id=musician.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Profile
+        </a>
+    </div>
+    
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        
+        <!-- Background Section -->
+        <div class="customization-section">
+            <h3>🎨 Background Color</h3>
+            <div class="mb-3">
+                {{ form.background_color.label(class="form-label") }}
+                <div class="d-flex align-items-center">
+                    {{ form.background_color(class="form-control", style="max-width: 200px;") }}
+                    <div class="color-preview" id="bgColorPreview" style="background-color: {{ musician.background_color or '#E0E0E0' }};"></div>
+                </div>
+                {% if form.background_color.description %}
+                <small class="form-text text-muted">{{ form.background_color.description }}</small>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Colors Section -->
+        <div class="customization-section">
+            <h3>🎨 Colors</h3>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    {{ form.text_color.label(class="form-label") }}
+                    <div class="d-flex align-items-center">
+                        {{ form.text_color(class="form-control") }}
+                        <div class="color-preview" id="textColorPreview" style="background-color: {{ musician.text_color or '#000000' }};"></div>
+                    </div>
+                    {% if form.text_color.description %}
+                    <small class="form-text text-muted">{{ form.text_color.description }}</small>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 mb-3">
+                    {{ form.link_color.label(class="form-label") }}
+                    <div class="d-flex align-items-center">
+                        {{ form.link_color(class="form-control") }}
+                        <div class="color-preview" id="linkColorPreview" style="background-color: {{ musician.link_color or '#0066cc' }};"></div>
+                    </div>
+                    {% if form.link_color.description %}
+                    <small class="form-text text-muted">{{ form.link_color.description }}</small>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Theme Section -->
+        <div class="customization-section">
+            <h3>🎭 Profile Theme</h3>
+            <div class="mb-3">
+                {{ form.profile_theme.label(class="form-label") }}
+                {{ form.profile_theme(class="form-select") }}
+                <div class="help-text">Choose a pre-designed theme for your profile</div>
+            </div>
+        </div>
+        
+        <!-- Music Player Section -->
+        <div class="customization-section">
+            <h3>🎵 Music Player</h3>
+            <div class="mb-3">
+                {{ form.music_player_embed.label(class="form-label") }}
+                {{ form.music_player_embed(class="form-control", rows="4", placeholder='<iframe src="..."></iframe> or <script>...</script>') }}
+                {% if form.music_player_embed.description %}
+                <small class="form-text text-muted">{{ form.music_player_embed.description }}</small>
+                {% endif %}
+                <div class="help-text">
+                    You can embed music from YouTube, Spotify, SoundCloud, etc. Just paste the embed code here.
+                </div>
+            </div>
+        </div>
+        
+        <!-- Custom CSS Section -->
+        <div class="customization-section">
+            <h3>💻 Custom CSS</h3>
+            <div class="mb-3">
+                {{ form.custom_css.label(class="form-label") }}
+                {{ form.custom_css(class="form-control", rows="8", placeholder="/* Add your custom CSS here */\n.profile-card {\n    /* your styles */\n}") }}
+                {% if form.custom_css.description %}
+                <small class="form-text text-muted">{{ form.custom_css.description }}</small>
+                {% endif %}
+                <div class="help-text">
+                    Advanced: Add your own CSS to further customize your profile. Use selectors like .profile-card, .profile-header, etc.
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-save"></i> Save Customization
+            </button>
+            <a href="{{ url_for('view_musician_profile', id=musician.id) }}" class="btn btn-outline-secondary btn-lg ms-2">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Update color previews in real-time
+    document.getElementById('{{ form.background_color.id }}').addEventListener('input', function(e) {
+        document.getElementById('bgColorPreview').style.backgroundColor = e.target.value || '#E0E0E0';
+    });
+    
+    document.getElementById('{{ form.text_color.id }}').addEventListener('input', function(e) {
+        document.getElementById('textColorPreview').style.backgroundColor = e.target.value || '#000000';
+    });
+    
+    document.getElementById('{{ form.link_color.id }}').addEventListener('input', function(e) {
+        document.getElementById('linkColorPreview').style.backgroundColor = e.target.value || '#0066cc';
+    });
+</script>
+{% endblock %}
+

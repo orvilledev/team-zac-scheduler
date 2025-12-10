@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Permissions Management - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Permissions Management</h1>
+    <a href="{{ url_for('users') }}" class="btn btn-outline-secondary">Back to Users</a>
+</div>
+
+<div class="alert alert-info">
+    <strong>ℹ️ Note:</strong> Grant specific permissions to users to allow them to edit certain sections. 
+    <strong>Profiles cannot be edited by others</strong> - users can only edit their own profiles.
+</div>
+
+<div class="row">
+    <!-- Grant Permissions Form -->
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Grant Permissions</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('permissions') }}">
+                    <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        {{ form.user_id.label(class="form-label") }}
+                        {{ form.user_id(class="form-select") }}
+                        {% if form.user_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.user_id.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>Select Permissions:</h6>
+                        <div class="form-check">
+                            {{ form.edit_slides(class="form-check-input") }}
+                            {{ form.edit_slides.label(class="form-check-label") }}
+                            <small class="text-muted d-block">{{ form.edit_slides.description }}</small>
+                        </div>
+                        <div class="form-check">
+                            {{ form.edit_announcements(class="form-check-input") }}
+                            {{ form.edit_announcements.label(class="form-check-label") }}
+                            <small class="text-muted d-block">{{ form.edit_announcements.description }}</small>
+                        </div>
+                    </div>
+                    
+                    {{ form.submit(class="btn btn-primary w-100") }}
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Permissions Overview -->
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">Current Permissions</h5>
+            </div>
+            <div class="card-body">
+                {% if users_with_permissions %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Edit Job Aids</th>
+                                <th>Edit Announcements</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in users_with_permissions %}
+                            <tr>
+                                <td>
+                                    <strong>{{ item.user.get_display_name() }}</strong>
+                                    <br><small class="text-muted">{{ item.user.username }}</small>
+                                </td>
+                                <td>
+                                    {% if item.permissions.get('edit_slides') %}
+                                        <span class="badge bg-primary">✓ Granted</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if item.permissions.get('edit_announcements') %}
+                                        <span class="badge bg-primary">✓ Granted</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No users found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-populate form when user selects a user
+document.addEventListener('DOMContentLoaded', function() {
+    const userSelect = document.querySelector('select[name="user_id"]');
+    {% if users_with_permissions %}
+    const usersData = [
+        {% for item in users_with_permissions %}
+        {
+            user: { id: {{ item.user.id }} },
+            permissions: {
+                edit_slides: {{ 'true' if item.permissions.get('edit_slides') else 'false' }},
+                edit_announcements: {{ 'true' if item.permissions.get('edit_announcements') else 'false' }}
+            }
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ];
+    
+    if (userSelect) {
+        userSelect.addEventListener('change', function() {
+            const userId = parseInt(this.value);
+            if (!userId) return;
+            
+            const userData = usersData.find(function(u) {
+                return u.user.id === userId;
+            });
+            
+            if (userData) {
+                // Check/uncheck permission checkboxes based on user's current permissions
+                const slidesCheck = document.querySelector('input[name="edit_slides"]');
+                const announcementsCheck = document.querySelector('input[name="edit_announcements"]');
+                
+                if (slidesCheck) slidesCheck.checked = userData.permissions.edit_slides;
+                if (announcementsCheck) announcementsCheck.checked = userData.permissions.edit_announcements;
+            }
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}
+

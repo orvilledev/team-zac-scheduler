@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('announcements') }}" class="btn btn-outline-secondary">Back to Announcements</a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data">
+                    {{ form.hidden_tag() }}
+                    <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                    
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control") }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.title.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.title.description %}
+                        <small class="form-text text-muted">{{ form.title.description }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.caption.label(class="form-label") }}
+                        {{ form.caption(class="form-control", rows=4) }}
+                        {% if form.caption.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.caption.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.caption.description %}
+                        <small class="form-text text-muted">{{ form.caption.description }}</small>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.image.label(class="form-label") }}
+                        {{ form.image(class="form-control") }}
+                        {% if form.image.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.image.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        {% if form.image.description %}
+                        <small class="form-text text-muted">{{ form.image.description }}</small>
+                        {% endif %}
+                        {% if announcement and announcement.image_path %}
+                        <div class="mt-2">
+                            <p class="text-muted small">Current image:</p>
+                            <img src="{{ url_for('static', filename=announcement.image_path) }}" alt="Current image" style="max-width: 200px; max-height: 200px; object-fit: cover;" class="border rounded">
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.display_order.label(class="form-label") }}
+                            {{ form.display_order(class="form-control", type="number") }}
+                            {% if form.display_order.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.display_order.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if form.display_order.description %}
+                            <small class="form-text text-muted">{{ form.display_order.description }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            {{ form.is_active.label(class="form-label") }}
+                            {{ form.is_active(class="form-select") }}
+                            {% if form.is_active.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.is_active.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        {{ form.submit(class="btn btn-primary") }}
+                        <a href="{{ url_for('announcements') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="mb-0">
+                    <li>Upload graphics or images to promote upcoming events</li>
+                    <li>Add a caption to provide additional details</li>
+                    <li>Use display order to control which announcements appear first</li>
+                    <li>Set status to "Inactive" to hide announcements without deleting them</li>
+                    <li>Announcements are displayed on the dashboard for all users</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

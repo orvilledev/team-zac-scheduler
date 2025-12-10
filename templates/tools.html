@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}Tools - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .tools-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+        padding: 1rem 0;
+        align-items: start;
+    }
+    
+    .tool-card-wrapper {
+        position: relative;
+        padding-top: 5px;
+        margin-top: -5px;
+    }
+    
+    .tool-card {
+        background: linear-gradient(135deg, #f5f5f0 0%, #f0f0eb 100%);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        position: relative;
+        z-index: 1;
+        transform: translateY(0);
+    }
+    
+    .tool-card-wrapper:hover .tool-card {
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
+        z-index: 10;
+        transform: translateY(-5px);
+    }
+    
+    .tool-card-wrapper:not(:hover) .tool-card {
+        transform: translateY(0);
+    }
+    
+    .card-header {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid rgba(44, 95, 111, 0.1);
+    }
+    
+    .tool-screenshot {
+        width: 100%;
+        min-height: 200px;
+        max-height: 250px;
+        border-radius: 8px;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        color: white;
+        flex-shrink: 0;
+        overflow: hidden;
+        margin-bottom: 0.25rem;
+    }
+    
+    .tool-screenshot img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+    
+    .tool-name {
+        flex: 1;
+        text-align: center;
+        width: 100%;
+    }
+    
+    .tool-name a {
+        text-decoration: none;
+        color: #2C5F6F;
+        font-size: 1.25rem;
+        font-weight: 600;
+        transition: color 0.3s ease;
+        display: block;
+    }
+    
+    .tool-name a:hover {
+        color: #40A5A5;
+    }
+    
+    .developer-name {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 0.5rem;
+        font-weight: 500;
+        text-align: center;
+        font-style: italic;
+    }
+    
+    .description-section {
+        margin-bottom: 1.5rem;
+        flex: 1;
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: opacity 0.3s ease, max-height 0.3s ease;
+    }
+    
+    .tool-card:hover .description-section {
+        opacity: 1;
+        max-height: 500px;
+    }
+    
+    .description-text {
+        font-size: 0.9rem;
+        color: #666;
+        line-height: 1.6;
+    }
+    
+    .card-actions {
+        display: none;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        justify-content: center;
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 2px solid rgba(44, 95, 111, 0.1);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .tool-card:hover .card-actions {
+        display: flex;
+        opacity: 1;
+    }
+    
+    .card-actions .btn {
+        flex: 1;
+        max-width: 200px;
+        font-size: 0.9rem;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-visit-tool {
+        background-color: #2C5F6F !important;
+        border-color: #2C5F6F !important;
+        color: white !important;
+    }
+    
+    .btn-visit-tool:hover {
+        background-color: #40A5A5 !important;
+        border-color: #40A5A5 !important;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(44, 95, 111, 0.3);
+    }
+    
+    .btn-edit {
+        background-color: #e67a2e !important;
+        border-color: #e67a2e !important;
+        color: white !important;
+    }
+    
+    .btn-edit:hover {
+        background-color: #d66a1e !important;
+        border-color: #d66a1e !important;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(230, 122, 46, 0.3);
+    }
+    
+    .btn-outline-primary {
+        border-color: #2C5F6F !important;
+        color: #2C5F6F !important;
+    }
+    
+    .btn-outline-primary:hover {
+        background-color: #2C5F6F !important;
+        border-color: #2C5F6F !important;
+        color: white !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(44, 95, 111, 0.3);
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    
+    .page-title {
+        font-size: clamp(1.5rem, 4vw, 2.5rem);
+        color: #1a2e1a;
+        margin: 0;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        background: linear-gradient(135deg, #A8D5E2 0%, #40A5A5 100%);
+        border-radius: 12px;
+        color: white;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.8;
+    }
+    
+    .empty-state h5 {
+        color: white;
+        margin-bottom: 0.5rem;
+    }
+    
+    .empty-state p {
+        color: white;
+        margin: 0;
+        opacity: 0.9;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .tools-container {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        
+        .card-actions {
+            flex-direction: column;
+        }
+        
+        .card-actions .btn {
+            max-width: 100%;
+        }
+        
+        .page-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+    }
+    
+    @media (min-width: 1200px) {
+        .tools-container {
+            grid-template-columns: repeat(3, 1fr);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Tools</h1>
+    {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_team_leader()) %}
+    <a href="{{ url_for('add_tool') }}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Add Tool
+    </a>
+    {% endif %}
+</div>
+
+{% if tools %}
+<div class="tools-container">
+    {% for tool in tools %}
+    <div class="tool-card-wrapper">
+    <div class="tool-card">
+        <div class="card-header">
+            <div class="tool-screenshot">
+                {% if tool.screenshot %}
+                    <img src="{{ url_for('static', filename=tool.screenshot) }}" alt="{{ tool.name }}">
+                {% else %}
+                    🔧
+                {% endif %}
+            </div>
+            <div class="tool-name">
+                <a href="{{ tool.link }}" target="_blank" rel="noopener noreferrer">
+                    {{ tool.name }}
+                </a>
+                {% if tool.developer_name %}
+                <div class="developer-name">
+                    Developed by {{ tool.developer_name }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="description-section">
+            {% if tool.description %}
+                <div class="description-text">{{ tool.description }}</div>
+            {% else %}
+                <div class="description-text text-muted">No description provided</div>
+            {% endif %}
+        </div>
+        
+        <div class="card-actions">
+            <a href="{{ tool.link }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-visit-tool">
+                <i class="fas fa-external-link-alt"></i> Use Tool
+            </a>
+            {% if current_user.is_admin() or current_user.is_team_leader() %}
+                <a href="{{ url_for('edit_tool', id=tool.id) }}" class="btn btn-sm btn-edit">
+                    <i class="fas fa-edit"></i> Edit
+                </a>
+                <form method="POST" action="{{ url_for('delete_tool', id=tool.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this tool?');">
+                    <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fas fa-tools"></i>
+    <h5>No tools found.</h5>
+    <p>Get started by adding your first tool!</p>
+</div>
+{% endif %}
+{% endblock %}

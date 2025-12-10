@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_head %}
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Notifications <span id="unreadCountBadge" class="badge bg-danger ms-2" style="display: {% if unread_count > 0 %}inline-block{% else %}none{% endif %};">{{ unread_count }}</span></h1>
+    <div id="markAllButtonContainer" class="d-flex gap-2">
+        {% if notifications %}
+        <button type="button" class="btn btn-outline-danger" onclick="deleteAllNotifications()">
+            <i class="fas fa-trash"></i> Delete All
+        </button>
+        {% endif %}
+        {% if unread_count > 0 %}
+        <form method="POST" action="{{ url_for('mark_all_notifications_read') }}" class="d-inline">
+            <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+            <button type="submit" class="btn btn-outline-primary">Mark All as Read</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+{% if notifications %}
+<div class="list-group">
+    {% for notification in notifications %}
+    <a href="{{ notification.link }}" class="list-group-item list-group-item-action {% if not notification.is_read %}bg-light{% endif %}" 
+       data-notification-id="{{ notification.id }}"
+       data-notification-type="{{ notification.type or '' }}"
+       data-leave-request-id="{{ notification.leave_request_id or '' }}">
+        <div class="d-flex w-100 justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-1">
+                    <span class="me-2" style="font-size: 1.2rem;">{{ notification.icon }}</span>
+                    <h6 class="mb-0 {% if not notification.is_read %}fw-bold{% endif %}">{{ notification.text }}</h6>
+                    {% if not notification.is_read %}
+                    <span class="badge bg-danger rounded-pill ms-2">New</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">{{ notification.time_ago }}</small>
+            </div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    <h5>No notifications yet</h5>
+    <p class="mb-0">You'll see notifications here when someone interacts with your posts or when new practices are scheduled.</p>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Force refresh notifications when page loads to ensure we have latest data
+    // This prevents showing stale data if user navigated back
+    if (performance.navigation.type === 1 || performance.getEntriesByType('navigation')[0].type === 'reload') {
+        // Page was reloaded, ensure fresh data
+        window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+    }
+    
+    // Function to update the unread count display and notification items on this page
+    function updateUnreadCount() {
+        return fetch('/notifications')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.getElementById('unreadCountBadge');
+                const markAllContainer = document.getElementById('markAllButtonContainer');
+                
+                // Update badge
+                if (data.unread_count > 0) {
+                    badge.textContent = data.unread_count;
+                    badge.style.display = 'inline-block';
+                    // Show mark all button if not already visible
+                    if (markAllContainer.querySelector('form') === null) {
+                        markAllContainer.innerHTML = `
+                            <form method="POST" action="{{ url_for('mark_all_notifications_read') }}" class="d-inline">
+                                <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                <button type="submit" class="btn btn-outline-primary">Mark All as Read</button>
+                            </form>
+                        `;
+                    }
+                } else {
+                    badge.style.display = 'none';
+                    // Hide mark all button
+                    markAllContainer.innerHTML = '';
+                }
+                
+                // Update notification items in the list based on fresh data
+                data.notifications.forEach(notif => {
+                    const item = document.querySelector(`.list-group-item[data-notification-id="${notif.id}"]`);
+                    if (item) {
+                        // Update read state
+                        if (notif.is_read) {
+                            item.classList.remove('bg-light');
+                            const boldElement = item.querySelector('.fw-bold');
+                            if (boldElement) {
+                                boldElement.classList.remove('fw-bold');
+                            }
+                            const newBadge = item.querySelector('.badge.bg-danger');
+                            if (newBadge) {
+                                newBadge.remove();
+                            }
+                        }
+                    }
+                });
+                
+                // Also update navbar badge
+                if (typeof loadNotifications === 'function') {
+                    loadNotifications();
+                }
+                
+                return data;
+            })
+            .catch(error => {
+                console.error('Error updating unread count:', error);
+                throw error;
+            });
+    }
+    
+    // Refresh notifications when page becomes visible (user returns to tab/page)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            // Page became visible, refresh the notifications to get latest state
+            updateUnreadCount();
+        }
+    });
+    
+    // Also refresh on page focus
+    window.addEventListener('focus', function() {
+        updateUnreadCount();
+    });
+    
+    // Mark notifications as read when clicked
+    document.querySelectorAll('.list-group-item[data-notification-id]').forEach(item => {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            const notifId = this.getAttribute('data-notification-id');
+            const notifType = this.getAttribute('data-notification-type');
+            const leaveRequestId = this.getAttribute('data-leave-request-id');
+            const isUnread = this.classList.contains('bg-light');
+            const link = this.getAttribute('href');
+            
+            // Handle leave request notifications - show popup
+            if (notifType === 'leave_request' && leaveRequestId) {
+                // Mark as read
+                if (isUnread) {
+                    fetch(`/notifications/${notifId}/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(() => {
+                        this.classList.remove('bg-light');
+                        const boldElement = this.querySelector('.fw-bold');
+                        if (boldElement) boldElement.classList.remove('fw-bold');
+                        const badgeContainer = this.querySelector('.d-flex.align-items-center');
+                        if (badgeContainer) {
+                            const newBadge = badgeContainer.querySelector('.badge.bg-danger');
+                            if (newBadge) newBadge.remove();
+                        }
+                        updateUnreadCount();
+                    });
+                }
+                
+                // Show leave request popup
+                showLeaveRequestPopup(leaveRequestId);
+                return;
+            }
+            
+            // Handle other notifications normally
+            if (notifId) {
+                // Mark as read if unread
+                if (isUnread) {
+                    fetch(`/notifications/${notifId}/read`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to mark notification as read');
+                        }
+                        return response.json();
+                    }).then(data => {
+                        if (data.success) {
+                            // Remove unread styling immediately
+                            this.classList.remove('bg-light');
+                            
+                            // Remove bold styling
+                            const boldElement = this.querySelector('.fw-bold');
+                            if (boldElement) {
+                                boldElement.classList.remove('fw-bold');
+                            }
+                            
+                            // Remove "New" badge - be more specific to find the badge
+                            const badgeContainer = this.querySelector('.d-flex.align-items-center');
+                            if (badgeContainer) {
+                                const newBadge = badgeContainer.querySelector('.badge.bg-danger');
+                                if (newBadge) {
+                                    newBadge.remove();
+                                }
+                            }
+                            
+                            // Update unread count immediately (this will also update navbar)
+                            updateUnreadCount().then(() => {
+                                // Small delay to ensure UI updates are visible
+                                setTimeout(() => {
+                                    // Navigate to the link after marking as read
+                                    if (link && link !== '#') {
+                                        window.location.href = link;
+                                    }
+                                }, 100);
+                            });
+                        } else {
+                            console.error('Failed to mark notification as read:', data.message);
+                        }
+                    }).catch(error => {
+                        console.error('Error marking notification as read:', error);
+                        // Still navigate even if marking as read fails
+                        if (link && link !== '#') {
+                            window.location.href = link;
+                        }
+                    });
+                } else {
+                    // Already read, just navigate
+                    if (link && link !== '#') {
+                        window.location.href = link;
+                    }
+                }
+            }
+        });
+    });
+    
+    // Include showLeaveRequestPopup function from base.html if not already defined
+    if (typeof showLeaveRequestPopup === 'undefined') {
+        function showLeaveRequestPopup(leaveRequestId) {
+            fetch(`/leave-requests/${leaveRequestId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const request = data.request;
+                        const formattedDate = new Date(request.date + 'T00:00:00').toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                        });
+                        
+                        const content = `
+                            <div style="text-align: center; padding: 1rem 0;">
+                                <div style="font-size: 4rem; margin-bottom: 1rem;">📋</div>
+                                <p style="color: #1a2e1a; font-size: 1.2rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;">
+                                    <strong>${request.user_name}</strong> filed a leave request
+                                </p>
+                                <div style="background: #f0f0f0; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: left;">
+                                    <div style="margin-bottom: 0.5rem;"><strong>Date:</strong> ${formattedDate}</div>
+                                    <div><strong>Reason:</strong> ${request.reason}</div>
+                                </div>
+                                <div id="rejectReasonContainer" style="display: none; margin-bottom: 1rem;">
+                                    <label for="rejectReasonInput" style="display: block; margin-bottom: 0.5rem; color: #1a2e1a; font-weight: 500;">Reason for rejection:</label>
+                                    <textarea id="rejectReasonInput" class="form-control" rows="3" placeholder="Enter reason for rejection..." style="width: 100%; padding: 0.75rem; border-radius: 8px; border: 2px solid #6b7d4a;"></textarea>
+                                </div>
+                                <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 1.5rem;">
+                                    <button id="approveLeaveBtn" class="btn" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); border: none; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 500;">
+                                        Approve ✅
+                                    </button>
+                                    <button id="rejectLeaveBtn" class="btn" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; color: white; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 500;">
+                                        Reject ❌
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Show modal with custom buttons
+                        const modal = new bootstrap.Modal(document.getElementById('customModal'));
+                        document.getElementById('modalTitle').textContent = 'Leave Request Approval';
+                        document.getElementById('modalIcon').textContent = '📋';
+                        document.getElementById('modalContent').innerHTML = content;
+                        document.getElementById('modalOkBtn').style.display = 'none';
+                        document.getElementById('modalCancelBtn').style.display = 'none';
+                        
+                        // Handle approve button
+                        document.getElementById('approveLeaveBtn').addEventListener('click', function() {
+                            fetch(`/leave-requests/${leaveRequestId}/approve`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    modal.hide();
+                                    customAlert('Leave request approved successfully.', 'Success', '✅');
+                                    updateUnreadCount();
+                                    setTimeout(() => location.reload(), 1500);
+                                } else {
+                                    customAlert('Error: ' + result.message, 'Error', '⚠️');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                customAlert('An error occurred while approving the request.', 'Error', '⚠️');
+                            });
+                        });
+                        
+                        // Handle reject button
+                        let rejectMode = false;
+                        document.getElementById('rejectLeaveBtn').addEventListener('click', function() {
+                            if (!rejectMode) {
+                                // Show reject reason input
+                                document.getElementById('rejectReasonContainer').style.display = 'block';
+                                this.textContent = 'Confirm Rejection ❌';
+                                rejectMode = true;
+                                document.getElementById('rejectReasonInput').focus();
+                            } else {
+                                // Actually reject
+                                const reason = document.getElementById('rejectReasonInput').value.trim();
+                                fetch(`/leave-requests/${leaveRequestId}/reject`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        review_notes: reason
+                                    })
+                                })
+                                .then(response => response.json())
+                                .then(result => {
+                                    if (result.success) {
+                                        modal.hide();
+                                        customAlert('Leave request rejected.', 'Rejected', '❌');
+                                        updateUnreadCount();
+                                        setTimeout(() => location.reload(), 1500);
+                                    } else {
+                                        customAlert('Error: ' + result.message, 'Error', '⚠️');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    customAlert('An error occurred while rejecting the request.', 'Error', '⚠️');
+                                });
+                            }
+                        });
+                        
+                        modal.show();
+                    } else {
+                        customAlert('Error loading leave request details.', 'Error', '⚠️');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    customAlert('An error occurred while loading leave request.', 'Error', '⚠️');
+                });
+        }
+    }
+});
+
+function deleteAllNotifications() {
+    customConfirm(
+        'Are you sure you want to delete all notifications? This action cannot be undone.',
+        'Delete All Notifications',
+        '🗑️',
+        function() {
+            // User confirmed deletion
+            fetch('{{ url_for("delete_all_notifications") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ get_csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showCustomModal('Success', data.message, '✅', false, function() {
+                        setTimeout(() => location.reload(), 1000);
+                    });
+                } else {
+                    showCustomModal('Error', data.message, '❌', false);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showCustomModal('Error', 'An error occurred while deleting notifications.', '❌', false);
+            });
+        },
+        function() {
+            // User cancelled - do nothing
+        }
+    );
+}
+</script>
+{% endblock %}
+

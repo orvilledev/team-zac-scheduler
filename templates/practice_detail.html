@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+
+{% block title %}Practice Detail - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .musician-avatar {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #A8D5E2 0%, #40A5A5 100%);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        font-weight: bold;
+        color: white;
+        background-size: cover;
+        background-position: center;
+        margin-right: 10px;
+        vertical-align: middle;
+    }
+    
+    .musician-avatar img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+    }
+    
+    .musician-name-cell {
+        display: flex;
+        align-items: center;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Practice - {{ practice.date.strftime('%B %d, %Y') }}</h1>
+    <div>
+        {% if current_user.is_worship_leader() %}
+        <a href="{{ url_for('edit_practice', id=practice.id) }}" class="btn btn-secondary">Edit Practice</a>
+        {% endif %}
+        <a href="{{ url_for('practices') }}" class="btn btn-outline-secondary">Back to Practices</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Practice Details</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Date:</strong> {{ practice.date.strftime('%A, %B %d, %Y') }}</p>
+                {% if practice.time %}
+                <p><strong>Time:</strong> {{ practice.time.strftime('%I:%M %p') }}</p>
+                {% endif %}
+                {% if practice.location %}
+                <p><strong>Location:</strong> {{ practice.location }}</p>
+                {% endif %}
+                {% if practice.purpose %}
+                <p><strong>Purpose:</strong> {{ practice.purpose }}</p>
+                {% endif %}
+                {% if practice.notes %}
+                <p><strong>Notes:</strong><br>{{ practice.notes }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Assigned Musicians</h5>
+                <div>
+                    {% if current_user.is_worship_leader() %}
+                    <button type="button" class="btn btn-sm btn-secondary me-2" data-bs-toggle="modal" data-bs-target="#editMusiciansModal">Edit</button>
+                    <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addMusicianModal">Add Team Member</button>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                {% set musicians_list = practice._musicians_list if practice._musicians_list else practice.musicians %}
+                {% if musicians_list %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Musician</th>
+                                <th>Instrument</th>
+                                {% if current_user.is_worship_leader() %}
+                                <th>Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in musicians_list %}
+                            {% if assignment.musician %}
+                            <tr>
+                                <td>
+                                    <div class="musician-name-cell">
+                                        <div class="musician-avatar">
+                                            {% if assignment.musician.profile_picture %}
+                                                <img src="{{ url_for('static', filename=assignment.musician.profile_picture) }}" alt="{{ assignment.musician.get_display_name() }}">
+                                            {% else %}
+                                                {{ assignment.musician.get_display_name()[0].upper() if assignment.musician.get_display_name() else '?' }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <strong style="color: #2C5F6F;">{{ assignment.musician.get_display_name() }}</strong>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ assignment.instrument|format_instrument }}</td>
+                                {% if current_user.is_worship_leader() %}
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_practice_musician', practice_id=practice.id, assignment_id=assignment.id) }}" class="d-inline" onsubmit="return confirm('Remove this musician from the practice?');">
+                                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No team members assigned yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5>Song Lineup</h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#editLineupModal">Edit</button>
+            </div>
+            <div class="card-body">
+                {% if practice_songs %}
+                <ol class="list-group list-group-numbered">
+                    {% for practice_song in practice_songs %}
+                    <li class="list-group-item d-flex justify-content-between align-items-start">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">{{ practice_song.get_song_display_name() }}{% if practice_song.key %} <span class="badge bg-info">Key: {{ practice_song.key }}</span>{% endif %}</div>
+                            {% if practice_song.speed %}
+                            <small class="text-muted">Speed: {{ practice_song.speed }}</small>
+                            {% endif %}
+                            {% if practice_song.prepared_by and practice_song.preparer %}
+                            <br><small class="text-muted">Prepared by: {{ practice_song.preparer.get_display_name() if practice_song.preparer else 'Unknown' }}</small>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <form method="POST" action="{{ url_for('remove_practice_song', practice_id=practice.id, practice_song_id=practice_song.id) }}" class="d-inline remove-song-form">
+                                <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                <button type="submit" class="btn btn-sm btn-outline-danger remove-song-btn">×</button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ol>
+                {% else %}
+                <p class="text-muted">No songs added to lineup yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if current_user.is_worship_leader() %}
+<!-- Edit Team Members Modal (same as Add Team Member but for editing existing) -->
+<div class="modal fade" id="editMusiciansModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Assigned Musicians</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if practice.musicians %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Musician</th>
+                                <th>Instrument</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for assignment in practice.musicians %}
+                            {% if assignment.musician %}
+                            <tr>
+                                <td>
+                                    <div class="musician-name-cell">
+                                        <div class="musician-avatar">
+                                            {% if assignment.musician.profile_picture %}
+                                                <img src="{{ url_for('static', filename=assignment.musician.profile_picture) }}" alt="{{ assignment.musician.get_display_name() }}">
+                                            {% else %}
+                                                {{ assignment.musician.get_display_name()[0].upper() if assignment.musician.get_display_name() else '?' }}
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <strong style="color: #2C5F6F;">{{ assignment.musician.get_display_name() }}</strong>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ assignment.instrument|format_instrument }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_practice_musician', practice_id=practice.id, assignment_id=assignment.id) }}" class="d-inline" onsubmit="return confirm('Remove this musician from the practice?');">
+                                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No team members assigned yet.</p>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Song Lineup Modal -->
+<div class="modal fade" id="editLineupModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Song Lineup</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_practice_songs', practice_id=practice.id) }}" id="addSongsForm">
+                <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                    
+                    <div id="songsContainer">
+                        <!-- First song entry -->
+                        <div class="song-entry mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0">Song 1</h6>
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-song-btn" style="display: none;">Remove</button>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Enter a Song</label>
+                                <input type="text" name="song_names[]" class="form-control song-name-input" placeholder="Enter song name (e.g., Amazing Grace)" required>
+                                <small class="form-text text-muted">You can enter any song name, even if it's not in the song list</small>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Key (Optional)</label>
+                                    <input type="text" name="keys[]" class="form-control" placeholder="e.g., C, D, E">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Song Speed</label>
+                                    <select name="speeds[]" class="form-select">
+                                        <option value="">Select speed...</option>
+                                        <option value="Fast">Fast</option>
+                                        <option value="Mid">Mid</option>
+                                        <option value="Slow">Slow</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Order</label>
+                                    <input type="number" name="orders[]" class="form-control" value="{{ (practice_songs|length + 1) if practice_songs else 1 }}" min="1">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="addSongBtn">
+                        + Add Another Song
+                    </button>
+                    
+                    <div class="mb-3 mt-3">
+                        <label for="prepared_by" class="form-label">Prepared by</label>
+                        <select name="prepared_by" id="prepared_by" class="form-select">
+                            <option value="">Select who prepared this...</option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}" {% if user.id == current_user.id %}selected{% endif %}>{{ user.get_display_name() }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Select who prepared this lineup</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Songs to Lineup</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('songsContainer');
+    const addBtn = document.getElementById('addSongBtn');
+    let songCount = 1;
+    const baseOrder = {{ (practice_songs|length + 1) if practice_songs else 1 }};
+    
+    addBtn.addEventListener('click', function() {
+        songCount++;
+        const newEntry = document.createElement('div');
+        newEntry.className = 'song-entry mb-3 p-3 border rounded';
+        newEntry.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h6 class="mb-0">Song ${songCount}</h6>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-song-btn">Remove</button>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Enter a Song</label>
+                <input type="text" name="song_names[]" class="form-control song-name-input" placeholder="Enter song name (e.g., Amazing Grace)" required>
+                <small class="form-text text-muted">You can enter any song name, even if it's not in the song list</small>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Key (Optional)</label>
+                    <input type="text" name="keys[]" class="form-control" placeholder="e.g., C, D, E">
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Song Speed</label>
+                    <select name="speeds[]" class="form-select">
+                        <option value="">Select speed...</option>
+                        <option value="Fast">Fast</option>
+                        <option value="Mid">Mid</option>
+                        <option value="Slow">Slow</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Order</label>
+                    <input type="number" name="orders[]" class="form-control" value="${baseOrder + songCount - 1}" min="1">
+                </div>
+            </div>
+        `;
+        container.appendChild(newEntry);
+        
+        // Update remove button visibility
+        updateRemoveButtons();
+    });
+    
+    container.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-song-btn')) {
+            const entry = e.target.closest('.song-entry');
+            entry.remove();
+            songCount--;
+            updateRemoveButtons();
+            updateSongNumbers();
+        }
+    });
+    
+    function updateRemoveButtons() {
+        const entries = container.querySelectorAll('.song-entry');
+        entries.forEach((entry, index) => {
+            const removeBtn = entry.querySelector('.remove-song-btn');
+            if (entries.length > 1) {
+                removeBtn.style.display = 'block';
+            } else {
+                removeBtn.style.display = 'none';
+            }
+        });
+    }
+    
+    function updateSongNumbers() {
+        const entries = container.querySelectorAll('.song-entry');
+        entries.forEach((entry, index) => {
+            const title = entry.querySelector('h6');
+            title.textContent = `Song ${index + 1}`;
+        });
+    }
+});
+
+// Handle song removal with single-click confirmation
+document.addEventListener('DOMContentLoaded', function() {
+    const removeForms = document.querySelectorAll('.remove-song-form');
+    removeForms.forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            if (!confirm('Remove this song from the lineup?')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+    });
+});
+</script>
+{% endif %}
+
+{% if current_user.is_worship_leader() %}
+<!-- Add Musician Modal -->
+<div class="modal fade" id="addMusicianModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Team Member to Practice</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('add_practice_musician', practice_id=practice.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                {{ form.hidden_tag() }}
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3" role="alert">
+                        <strong>Practice Details:</strong><br>
+                        <strong>Date:</strong> {{ practice.date.strftime('%B %d, %Y') }}<br>
+                        {% if practice.location %}
+                        <strong>Venue:</strong> {{ practice.location }}
+                        {% else %}
+                        <strong>Venue:</strong> <em>Not specified</em>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.musician_id.label(class="form-label") }}
+                        {{ form.musician_id(class="form-select") }}
+                        {% if form.musician_id.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.musician_id.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.instrument.label(class="form-label") }}
+                        {{ form.instrument(class="form-control") }}
+                        {% if form.instrument.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.instrument.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+

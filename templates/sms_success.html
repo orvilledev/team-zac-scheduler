@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}SMS Sent Successfully - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .success-container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 40px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        text-align: center;
+    }
+    
+    .success-icon {
+        width: 100px;
+        height: 100px;
+        margin: 0 auto 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: scaleIn 0.5s ease-out;
+    }
+    
+    .success-icon svg {
+        width: 60px;
+        height: 60px;
+        fill: white;
+    }
+    
+    @keyframes scaleIn {
+        from {
+            transform: scale(0);
+            opacity: 0;
+        }
+        to {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    
+    .success-title {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #2d3748;
+        margin-bottom: 20px;
+        animation: fadeInUp 0.6s ease-out 0.2s both;
+    }
+    
+    .success-message {
+        font-size: 1.1rem;
+        color: #4a5568;
+        margin-bottom: 30px;
+        line-height: 1.6;
+        animation: fadeInUp 0.6s ease-out 0.3s both;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin: 25px 0;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        animation: fadeInUp 0.6s ease-out 0.4s both;
+    }
+    
+    .info-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #718096;
+        font-size: 0.95rem;
+    }
+    
+    .info-value {
+        color: #2d3748;
+        font-size: 1rem;
+        text-align: right;
+    }
+    
+    .action-buttons {
+        margin-top: 30px;
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        animation: fadeInUp 0.6s ease-out 0.5s both;
+    }
+    
+    .btn-success-page {
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .btn-success-page:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .checkmark-circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+    
+    .checkmark {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: block;
+        stroke-width: 2;
+        stroke: #fff;
+        stroke-miterlimit: 10;
+        margin: 10% auto;
+        box-shadow: inset 0px 0px 0px #4ade80;
+        animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
+    }
+    
+    .checkmark-check {
+        transform-origin: 50% 50%;
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.8s forwards;
+    }
+    
+    @keyframes stroke {
+        100% {
+            stroke-dashoffset: 0;
+        }
+    }
+    
+    @keyframes scale {
+        0%, 100% {
+            transform: none;
+        }
+        50% {
+            transform: scale3d(1.1, 1.1, 1);
+        }
+    }
+    
+    @keyframes fill {
+        100% {
+            box-shadow: inset 0px 0px 0px 30px #4ade80;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-container">
+    <div class="success-icon">
+        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
+    </div>
+    
+    <h1 class="success-title">SMS Sent Successfully! 📱</h1>
+    
+    <p class="success-message">
+        The SMS notification has been successfully sent to <strong>{{ user.get_display_name() if user else musician.get_display_name() }}</strong>.
+        <br><br>
+        <span style="font-size: 0.95rem; color: #718096;">
+            ✓ They will receive automatic reminders 1 day before and 1 hour before the practice.
+        </span>
+    </p>
+    
+    <div class="info-card">
+        <div class="info-row">
+            <span class="info-label">Recipient:</span>
+            <span class="info-value">{{ user.get_display_name() if user else musician.get_display_name() }}</span>
+        </div>
+        {% if user and user.mobile_number %}
+        <div class="info-row">
+            <span class="info-label">Phone Number:</span>
+            <span class="info-value">{{ user.mobile_number }}</span>
+        </div>
+        {% endif %}
+        <div class="info-row">
+            <span class="info-label">Practice Date:</span>
+            <span class="info-value">{{ practice.date.strftime('%B %d, %Y') if practice.date else 'TBD' }}</span>
+        </div>
+        {% if practice.time %}
+        <div class="info-row">
+            <span class="info-label">Practice Time:</span>
+            <span class="info-value">{{ practice.time.strftime('%I:%M %p') }}</span>
+        </div>
+        {% endif %}
+        {% if practice.location %}
+        <div class="info-row">
+            <span class="info-label">Location:</span>
+            <span class="info-value">{{ practice.location }}</span>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="action-buttons">
+        <a href="{{ url_for('practice_detail', id=practice.id) }}" class="btn btn-primary btn-success-page">
+            Back to Practice
+        </a>
+        <a href="{{ url_for('practices') }}" class="btn btn-outline-secondary btn-success-page">
+            View All Practices
+        </a>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,741 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+{% if user_assignment_info %}
+    {# User has a practice assignment this week #}
+    <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}!</h1>
+{% elif current_user.is_team_leader() %}
+    {# Team Leader welcome message #}
+    <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}! How would you like to manage the team today?</h1>
+{% elif current_user.role == 'case_manager' %}
+    {# Case Manager welcome message #}
+    <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}! Ready to coordinate and make things happen today?</h1>
+{% elif current_user.role == 'shipment_coordinator' %}
+    {# Shipment Coordinator welcome message #}
+    <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}! Let's organize and streamline our operations today!</h1>
+{% elif current_user.role == 'data_analyst' %}
+    {# Data Analyst welcome message #}
+    <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}! Time to analyze, strategize, and optimize!</h1>
+{% else %}
+    {# Default welcome message #}
+    <h1 class="mb-4">Welcome, {{ current_user.get_display_name() }}! We're blessed to have you here.</h1>
+{% endif %}
+
+{% if announcements %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">📢 Upcoming Events</h5>
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('announcements') }}" class="btn btn-sm btn-light">Manage Announcements</a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for announcement in announcements %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card h-100">
+                    {% if announcement.image_path %}
+                    <img src="{{ url_for('static', filename=announcement.image_path) }}" class="card-img-top" alt="{{ announcement.title }}" style="max-height: 200px; object-fit: cover;">
+                    {% endif %}
+                    <div class="card-body">
+                        <h6 class="card-title">{{ announcement.title }}</h6>
+                        {% if announcement.caption %}
+                        <p class="card-text text-muted">{{ announcement.caption }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% elif current_user.is_admin() %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">📢 Upcoming Events</h5>
+        <a href="{{ url_for('announcements') }}" class="btn btn-sm btn-light">Manage Announcements</a>
+    </div>
+    <div class="card-body">
+        <p class="text-muted mb-0">No announcements yet. <a href="{{ url_for('add_announcement') }}">Add your first event announcement</a> to display it here.</p>
+    </div>
+</div>
+{% endif %}
+
+{% if new_musicians %}
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">🎉 Welcome New Team Members!</h5>
+    </div>
+    <div class="card-body">
+        <p class="mb-3">We're excited to have these new members join our team:</p>
+        <div class="row">
+            {% for musician in new_musicians %}
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="d-flex align-items-center p-2 border rounded">
+                    {% if musician.profile_picture %}
+                    <div class="me-3" style="width: 50px; height: 50px; border-radius: 50%; background-image: url('{{ url_for('static', filename=musician.profile_picture) }}'); background-size: cover; background-position: center; flex-shrink: 0;"></div>
+                    {% else %}
+                    <div class="me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%; background: linear-gradient(135deg, #A8D5E2 0%, #40A5A5 100%); color: white; font-weight: bold; flex-shrink: 0;">
+                        {{ musician.get_display_name()[0].upper() if musician.get_display_name() else '?' }}
+                    </div>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <strong><a href="{{ url_for('view_musician_profile', id=musician.id) }}" class="text-decoration-none" style="color: #2C5F6F;">{{ musician.get_display_name() }}</a></strong>
+                        {% set role_to_show = None %}
+                        {% if musician.instruments and musician.instruments in ['case_manager', 'shipment_coordinator', 'data_analyst', 'team_leader'] %}
+                            {% set role_to_show = musician.instruments %}
+                        {% elif musician.user and musician.user.role in ['case_manager', 'shipment_coordinator', 'data_analyst', 'team_leader'] %}
+                            {% set role_to_show = musician.user.role %}
+                        {% endif %}
+                        {% if role_to_show %}
+                            <br><small class="text-muted">
+                                {% if role_to_show == 'case_manager' %}Case Manager
+                                {% elif role_to_show == 'shipment_coordinator' %}Shipment Coordinator
+                                {% elif role_to_show == 'data_analyst' %}Data Analyst
+                                {% elif role_to_show == 'team_leader' %}Team Leader
+                                {% endif %}
+                            </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if current_user.is_team_leader() %}
+    {# Show pending leave requests for team leaders/admins #}
+    {% if pending_leave_requests %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">⏳ Pending Leave Approvals</h5>
+                        <small class="text-white-50">Leave requests from your team members requiring your approval</small>
+                    </div>
+                    <div>
+                        {% if pending_leave_requests|length > 0 %}
+                        <button type="button" class="btn btn-sm btn-success me-2" onclick="showApproveAllModal({{ pending_leave_requests|length }})">Approve All ({{ pending_leave_requests|length }})</button>
+                        {% endif %}
+                        <a href="{{ url_for('leave_requests') }}" class="btn btn-sm btn-light">View All Requests</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Team Member</th>
+                                    <th>Date</th>
+                                    <th>Reason</th>
+                                    <th>Filed On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for request in pending_leave_requests[:5] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ request.user.get_display_name() }}</strong>
+                                    </td>
+                                    <td>{{ request.date.strftime('%B %d, %Y') }}</td>
+                                    <td>{{ request.reason }}</td>
+                                    <td>{{ request.requested_at.strftime('%B %d, %Y %H:%M') if request.requested_at else 'N/A' }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-success" onclick="showApproveModal({{ request.id }}, '{{ request.user.get_display_name() }}', '{{ request.date.strftime('%B %d, %Y') }}', '{{ request.reason|replace("'", "\\'") }}')">Approve</button>
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="showRejectModal({{ request.id }}, '{{ request.user.get_display_name() }}', '{{ request.date.strftime('%B %d, %Y') }}', '{{ request.reason|replace("'", "\\'") }}')">Reject</button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% if pending_leave_requests|length > 5 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('leave_requests') }}" class="btn btn-outline-primary">View All {{ pending_leave_requests|length }} Pending Requests</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">⏳ Pending Leave Approvals</h5>
+                        <small class="text-white-50">Leave requests from your team members requiring your approval</small>
+                    </div>
+                    <div>
+                        <a href="{{ url_for('leave_requests') }}" class="btn btn-sm btn-light">View All Requests</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-0">No pending leave requests at this time.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endif %}
+
+{# Activity Feed Section - Replaces Practice Overview #}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activities</h5>
+                    <small class="text-white-50">Highlights and milestones from the team</small>
+                </div>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% if recent_activities %}
+                <div class="activity-feed">
+                    {% for activity in recent_activities %}
+                    <div class="activity-item d-flex align-items-start mb-3 pb-3 border-bottom">
+                        <div class="activity-icon me-3 flex-shrink-0" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #A8D5E2 0%, #40A5A5 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 1.2rem; overflow: hidden;">
+                            {% if activity.actor and activity.actor.musician and activity.actor.musician.profile_picture %}
+                                <img src="{{ url_for('static', filename=activity.actor.musician.profile_picture) }}" alt="{{ activity.actor.get_display_name() }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                {% if activity.actor %}
+                                    {{ activity.actor.get_display_name()[0].upper() if activity.actor.get_display_name() else '?' }}
+                                {% else %}
+                                    {% if activity.activity_type == 'leave_filed' %}
+                                        📝
+                                    {% elif activity.activity_type == 'leave_approved' %}
+                                        ✅
+                                    {% elif activity.activity_type == 'job_aid_uploaded' %}
+                                        📄
+                                    {% elif activity.activity_type == 'new_member' %}
+                                        👤
+                                    {% else %}
+                                        🔔
+                                    {% endif %}
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                        <div class="activity-content flex-grow-1">
+                            <div class="activity-description mb-1">
+                                {{ activity.description }}
+                            </div>
+                            <small class="text-muted">
+                                <i class="far fa-clock me-1"></i>{{ activity.created_at|format_manila_time('%B %d, %Y at %I:%M %p') }}
+                                {% if activity.actor %}
+                                by <strong>{{ activity.actor.get_display_name() }}</strong>
+                                {% endif %}
+                            </small>
+                            {% if activity.slide %}
+                            <div class="mt-2">
+                                <a href="{{ url_for('view_slide', id=activity.slide_id) }}" class="btn btn-sm btn-primary">
+                                    {% if activity.slide.file_type == 'word' %}
+                                        <i class="fa-solid fa-file-word me-1"></i>
+                                    {% elif activity.slide.file_type == 'excel' %}
+                                        <i class="fa-solid fa-file-excel me-1"></i>
+                                    {% elif activity.slide.file_type == 'csv' %}
+                                        <i class="fa-solid fa-file-csv me-1"></i>
+                                    {% elif activity.slide.file_type == 'image' %}
+                                        <i class="fa-solid fa-file-image me-1"></i>
+                                    {% elif activity.slide.file_type == 'pdf' %}
+                                        <i class="fa-solid fa-file-pdf me-1"></i>
+                                    {% elif activity.slide.file_type == 'txt' %}
+                                        <i class="fa-solid fa-file-lines me-1"></i>
+                                    {% else %}
+                                        <i class="fa-solid fa-file me-1"></i>
+                                    {% endif %}
+                                    View Job Aid
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-3x mb-3" style="opacity: 0.3;"></i>
+                    <p>No recent activities to display.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Approval Confirmation Modal -->
+{% if current_user.is_team_leader() %}
+<div class="modal fade" id="approveLeaveModal" tabindex="-1" aria-labelledby="approveLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="border-bottom: 2px solid #e8e4d8; background: linear-gradient(135deg, #1a2e1a 0%, #2a3f2a 100%); border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="approveLeaveModalLabel" style="color: white; font-weight: 600;">
+                    Approve Leave Request
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background: #f5f1e8;">
+                <div style="text-align: center; padding: 1rem 0;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                    <p style="color: #1a2e1a; font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;">
+                        Are you sure you want to approve this leave request?
+                    </p>
+                    <div id="approveLeaveDetails" style="background: #e8e4d8; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: left;">
+                        <!-- Leave request details will be inserted here -->
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e8e4d8; background: #f5f1e8; border-radius: 0 0 15px 15px; justify-content: center;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background: #6c757d; border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500; margin-right: 1rem;">Cancel</button>
+                <button type="button" class="btn" id="confirmApproveBtn" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">Approve ✅</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Approve All Confirmation Modal -->
+<div class="modal fade" id="approveAllModal" tabindex="-1" aria-labelledby="approveAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="border-bottom: 2px solid #e8e4d8; background: linear-gradient(135deg, #1a2e1a 0%, #2a3f2a 100%); border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="approveAllModalLabel" style="color: white; font-weight: 600;">
+                    Approve All Leave Requests
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background: #f5f1e8;">
+                <div style="text-align: center; padding: 1rem 0;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">✅</div>
+                    <p style="color: #1a2e1a; font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;">
+                        Are you sure you want to approve all <strong id="approveAllCount">0</strong> pending leave requests?
+                    </p>
+                    <div style="background: #e8e4d8; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: left;">
+                        <p style="color: #1a2e1a; margin: 0; font-size: 0.95rem;">
+                            This action will approve all pending leave requests at once. This cannot be undone.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e8e4d8; background: #f5f1e8; border-radius: 0 0 15px 15px; justify-content: center;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background: #6c757d; border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500; margin-right: 1rem;">Cancel</button>
+                <button type="button" class="btn" id="confirmApproveAllBtn" style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">Approve All ✅</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Rejection Modal -->
+<div class="modal fade" id="rejectLeaveModal" tabindex="-1" aria-labelledby="rejectLeaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="border-bottom: 2px solid #e8e4d8; background: linear-gradient(135deg, #1a2e1a 0%, #2a3f2a 100%); border-radius: 15px 15px 0 0;">
+                <h5 class="modal-title" id="rejectLeaveModalLabel" style="color: white; font-weight: 600;">
+                    Reject Leave Request
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" style="padding: 2rem; background: #f5f1e8;">
+                <div style="text-align: center; padding: 1rem 0;">
+                    <div style="font-size: 4rem; margin-bottom: 1rem;">❌</div>
+                    <p style="color: #1a2e1a; font-size: 1.1rem; line-height: 1.8; margin-bottom: 1rem; font-weight: 500;">
+                        Are you sure you want to reject this leave request?
+                    </p>
+                    <div id="rejectLeaveDetails" style="background: #e8e4d8; padding: 1rem; border-radius: 8px; margin-top: 1rem; text-align: left; margin-bottom: 1.5rem;">
+                        <!-- Leave request details will be inserted here -->
+                    </div>
+                    <div class="mb-3" style="text-align: left;">
+                        <label for="rejectReasonInput" class="form-label" style="color: #1a2e1a; font-weight: 500; margin-bottom: 0.5rem;">Reason for rejection (optional):</label>
+                        <textarea id="rejectReasonInput" class="form-control" rows="3" placeholder="Enter reason for rejection..." style="font-size: 1rem; padding: 0.75rem; border-radius: 8px; border: 2px solid #6b7d4a;"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 2px solid #e8e4d8; background: #f5f1e8; border-radius: 0 0 15px 15px; justify-content: center;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background: #6c757d; border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500; margin-right: 1rem;">Cancel</button>
+                <button type="button" class="btn" id="confirmRejectBtn" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); border: none; color: white; padding: 0.5rem 2rem; border-radius: 8px; font-weight: 500;">Reject ❌</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Practice Assignment Reminder Modal -->
+{% if user_assignment_info and latest_practice %}
+<div class="modal fade" id="practiceReminderModal" tabindex="-1" aria-labelledby="practiceReminderModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="practiceReminderModalLabel">🎵 Practice Reminder</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-3">
+                    <span style="font-size: 4rem;">🎵</span>
+                </div>
+                <h4 class="mb-3">Hello, {{ user_assignment_info.nickname }}!</h4>
+                <p class="lead mb-3">
+                    You're assigned as our <strong class="text-primary">{{ user_assignment_info.instrument|format_instrument }}</strong> 
+                    for the upcoming practice!
+                </p>
+                <div class="alert alert-info mb-3">
+                    <strong>Practice Date:</strong> {{ user_assignment_info.date }}
+                    {% if latest_practice.time %}
+                    <br><strong>Time:</strong> {{ latest_practice.time.strftime('%I:%M %p') }}
+                    {% endif %}
+                    {% if latest_practice.location %}
+                    <br><strong>Location:</strong> {{ latest_practice.location }}
+                    {% endif %}
+                </div>
+                <p class="text-muted mb-0">Please make sure to prepare and be ready for practice. We're excited to worship together!</p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <a href="{{ url_for('practice_detail', id=latest_practice.id) }}" class="btn btn-primary">
+                    View Practice Details
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Got it!</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+{% if current_user.is_team_leader() %}
+<script>
+    let currentRequestId = null;
+    let approveModal = null;
+    let rejectModal = null;
+    let approveAllModal = null;
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize modals
+        const approveModalElement = document.getElementById('approveLeaveModal');
+        const rejectModalElement = document.getElementById('rejectLeaveModal');
+        const approveAllModalElement = document.getElementById('approveAllModal');
+        
+        if (approveModalElement) {
+            approveModal = new bootstrap.Modal(approveModalElement);
+        }
+        if (rejectModalElement) {
+            rejectModal = new bootstrap.Modal(rejectModalElement);
+        }
+        if (approveAllModalElement) {
+            approveAllModal = new bootstrap.Modal(approveAllModalElement);
+        }
+        
+        // Setup confirm approve button - use event delegation to handle dynamically created modals
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.id === 'confirmApproveBtn') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentRequestId && !e.target.disabled) {
+                    approveLeave(currentRequestId);
+                }
+            }
+            if (e.target && e.target.id === 'confirmRejectBtn') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentRequestId && !e.target.disabled) {
+                    const reason = document.getElementById('rejectReasonInput').value.trim();
+                    rejectLeave(currentRequestId, reason);
+                }
+            }
+            if (e.target && e.target.id === 'confirmApproveAllBtn') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!e.target.disabled) {
+                    approveAllLeaves();
+                }
+            }
+        });
+    });
+    
+    function showApproveModal(requestId, userName, date, reason) {
+        currentRequestId = requestId;
+        
+        // Update modal content
+        const detailsDiv = document.getElementById('approveLeaveDetails');
+        if (detailsDiv) {
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom: 0.5rem;"><strong>Team Member:</strong> ${userName}</div>
+                <div style="margin-bottom: 0.5rem;"><strong>Date:</strong> ${date}</div>
+                <div><strong>Reason:</strong> ${reason}</div>
+            `;
+        }
+        
+        if (approveModal) {
+            approveModal.show();
+        }
+    }
+    
+    function showRejectModal(requestId, userName, date, reason) {
+        currentRequestId = requestId;
+        
+        // Reset button state
+        const confirmRejectBtn = document.getElementById('confirmRejectBtn');
+        if (confirmRejectBtn) {
+            confirmRejectBtn.disabled = false;
+            confirmRejectBtn.textContent = 'Reject ❌';
+        }
+        
+        // Reset reject reason input
+        const rejectReasonInput = document.getElementById('rejectReasonInput');
+        if (rejectReasonInput) {
+            rejectReasonInput.value = '';
+        }
+        
+        // Update modal content
+        const detailsDiv = document.getElementById('rejectLeaveDetails');
+        if (detailsDiv) {
+            detailsDiv.innerHTML = `
+                <div style="margin-bottom: 0.5rem;"><strong>Team Member:</strong> ${userName}</div>
+                <div style="margin-bottom: 0.5rem;"><strong>Date:</strong> ${date}</div>
+                <div><strong>Reason:</strong> ${reason}</div>
+            `;
+        }
+        
+        if (rejectModal) {
+            rejectModal.show();
+            // Focus on reason input after modal is shown
+            setTimeout(() => {
+                if (rejectReasonInput) {
+                    rejectReasonInput.focus();
+                }
+            }, 300);
+        }
+    }
+    
+    function approveLeave(requestId) {
+        // Prevent double-click by disabling the button
+        const confirmApproveBtn = document.getElementById('confirmApproveBtn');
+        if (confirmApproveBtn) {
+            confirmApproveBtn.disabled = true;
+            confirmApproveBtn.textContent = 'Processing...';
+        }
+        
+        fetch(`/leave-requests/${requestId}/approve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (approveModal) {
+                    approveModal.hide();
+                }
+                // Small delay before reload to ensure modal is hidden
+                setTimeout(() => {
+                    location.reload();
+                }, 100);
+            } else {
+                // Re-enable button on error
+                if (confirmApproveBtn) {
+                    confirmApproveBtn.disabled = false;
+                    confirmApproveBtn.textContent = 'Approve ✅';
+                }
+                if (approveModal) {
+                    approveModal.hide();
+                }
+                alert('Error: ' + (data.message || 'Failed to approve leave request'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Re-enable button on error
+            if (confirmApproveBtn) {
+                confirmApproveBtn.disabled = false;
+                confirmApproveBtn.textContent = 'Approve ✅';
+            }
+            if (approveModal) {
+                approveModal.hide();
+            }
+            alert('An error occurred while approving the leave request: ' + error.message);
+        });
+    }
+    
+    function rejectLeave(requestId, reason) {
+        // Prevent double-click by disabling the button
+        const confirmRejectBtn = document.getElementById('confirmRejectBtn');
+        if (confirmRejectBtn) {
+            confirmRejectBtn.disabled = true;
+            confirmRejectBtn.textContent = 'Processing...';
+        }
+        
+        fetch(`/leave-requests/${requestId}/reject`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                review_notes: reason
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (rejectModal) {
+                    rejectModal.hide();
+                }
+                // Small delay before reload to ensure modal is hidden
+                setTimeout(() => {
+                    location.reload();
+                }, 100);
+            } else {
+                // Re-enable button on error
+                if (confirmRejectBtn) {
+                    confirmRejectBtn.disabled = false;
+                    confirmRejectBtn.textContent = 'Reject ❌';
+                }
+                if (rejectModal) {
+                    rejectModal.hide();
+                }
+                alert('Error: ' + (data.message || 'Failed to reject leave request'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Re-enable button on error
+            if (confirmRejectBtn) {
+                confirmRejectBtn.disabled = false;
+                confirmRejectBtn.textContent = 'Reject ❌';
+            }
+            if (rejectModal) {
+                rejectModal.hide();
+            }
+            alert('An error occurred while rejecting the leave request: ' + error.message);
+        });
+    }
+    
+    function showApproveAllModal(count) {
+        // Update count in modal
+        const countElement = document.getElementById('approveAllCount');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+        
+        // Reset button state
+        const confirmApproveAllBtn = document.getElementById('confirmApproveAllBtn');
+        if (confirmApproveAllBtn) {
+            confirmApproveAllBtn.disabled = false;
+            confirmApproveAllBtn.textContent = 'Approve All ✅';
+        }
+        
+        if (approveAllModal) {
+            approveAllModal.show();
+        }
+    }
+    
+    function approveAllLeaves() {
+        // Prevent double-click by disabling the button
+        const confirmApproveAllBtn = document.getElementById('confirmApproveAllBtn');
+        if (confirmApproveAllBtn) {
+            confirmApproveAllBtn.disabled = true;
+            confirmApproveAllBtn.textContent = 'Processing...';
+        }
+        
+        fetch('/leave-requests/approve-all', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => {
+                    throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                }).catch(() => {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                if (approveAllModal) {
+                    approveAllModal.hide();
+                }
+                // Small delay before reload to ensure modal is hidden
+                setTimeout(() => {
+                    location.reload();
+                }, 100);
+            } else {
+                // Re-enable button on error
+                if (confirmApproveAllBtn) {
+                    confirmApproveAllBtn.disabled = false;
+                    confirmApproveAllBtn.textContent = 'Approve All ✅';
+                }
+                if (approveAllModal) {
+                    approveAllModal.hide();
+                }
+                alert('Error: ' + (data.message || 'Failed to approve all leave requests'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // Re-enable button on error
+            if (confirmApproveAllBtn) {
+                confirmApproveAllBtn.disabled = false;
+                confirmApproveAllBtn.textContent = 'Approve All ✅';
+            }
+            if (approveAllModal) {
+                approveAllModal.hide();
+            }
+            alert('An error occurred while approving all leave requests: ' + error.message);
+        });
+    }
+</script>
+{% endif %}
+{% if user_assignment_info and latest_practice %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Create a unique key for this practice assignment
+        const practiceKey = 'practice_reminder_dismissed_{{ latest_practice.id }}_{{ latest_practice.date.strftime("%Y-%m-%d") }}';
+        
+        // Check if user has already dismissed this modal for this practice
+        const hasDismissed = localStorage.getItem(practiceKey);
+        
+        if (!hasDismissed) {
+            // Show the practice reminder modal when page loads
+            const reminderModalElement = document.getElementById('practiceReminderModal');
+            const reminderModal = new bootstrap.Modal(reminderModalElement);
+            
+            // Show the modal
+            reminderModal.show();
+            
+            // When modal is hidden (closed), mark it as dismissed
+            reminderModalElement.addEventListener('hidden.bs.modal', function() {
+                localStorage.setItem(practiceKey, 'true');
+            });
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}
+

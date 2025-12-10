@@ -1,0 +1,1240 @@
+{% extends "base.html" %}
+
+{% block title %}Mood Board - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .journal-section {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    }
+    
+    .journal-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .journal-section-title {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #2d3748;
+        margin: 0;
+    }
+    
+    .journal-entry {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 15px;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .journal-entry:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .journal-entry-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 10px;
+    }
+    
+    .journal-entry-date {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .journal-entry-title {
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 10px;
+    }
+    
+    .journal-entry-content {
+        color: #4a5568;
+        line-height: 1.2;
+        white-space: pre-wrap;
+    }
+    
+    .journal-entry-content ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    
+    .journal-entry-content ul li {
+        margin-bottom: 2px !important;
+        line-height: 1.2;
+        padding-left: 0;
+    }
+    
+    .journal-entry-image {
+        max-width: 100%;
+        border-radius: 8px;
+        margin-top: 15px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .journal-entry-actions {
+        margin-top: 15px;
+        display: flex;
+        gap: 10px;
+    }
+    
+    .type-badge {
+        padding: 4px 12px;
+        border-radius: 15px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+    
+    .type-mood_board { background: #fce7f3; color: #be185d; }
+    .type-prayer { background: #dbeafe; color: #1e40af; }
+    .type-answered_prayer { background: #d1fae5; color: #065f46; }
+    .type-devotion { background: #fef3c7; color: #92400e; }
+    .type-gospel { background: #e0e7ff; color: #3730a3; }
+    
+    .filter-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-tab {
+        padding: 8px 20px;
+        border-radius: 20px;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s;
+        border: 2px solid #e9ecef;
+        color: #6c757d;
+    }
+    
+    .filter-tab:hover {
+        border-color: #667eea;
+        color: #667eea;
+    }
+    
+    .filter-tab.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #9ca3af;
+    }
+    
+    .empty-state-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <h1 class="mb-0">🎨 Mood Board</h1>
+        <span class="text-muted" style="font-size: 1.1rem; font-weight: 500;">{{ current_date_manila }}</span>
+    </div>
+</div>
+
+
+<!-- Mood Board Section -->
+<div class="journal-section" {% if filter_type != 'all' and filter_type != 'mood_board' %}style="display: none;"{% endif %}>
+    <div class="journal-section-header">
+        <h2 class="journal-section-title">🎨 Mood Board</h2>
+        <div class="d-flex align-items-center gap-3">
+            <span class="badge bg-secondary">{{ entries_by_type.mood_board|length }} entries</span>
+            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addJournalModal" onclick="setEntryType('mood_board')">
+                + New Entry
+            </button>
+        </div>
+    </div>
+    {% if entries_by_type.mood_board %}
+        {% for entry in entries_by_type.mood_board %}
+        <div class="journal-entry">
+            <div class="journal-entry-header">
+                <div>
+                    <span class="type-badge type-mood_board">Mood Board</span>
+                    <span class="journal-entry-date ms-2">{{ entry.date.strftime('%B %d, %Y') }}</span>
+                </div>
+                <div>
+                    <a href="{{ url_for('edit_journal', id=entry.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+                    <form method="POST" action="{{ url_for('delete_journal', id=entry.id) }}" class="d-inline" onsubmit="return confirm('Delete this entry?');">
+                        <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% if entry.title %}
+            <div class="journal-entry-title">{{ entry.title }}</div>
+            {% endif %}
+            {% if entry.mood_emojis %}
+            <div class="mb-3" style="font-size: 2rem; line-height: 1.5;">
+                {% for emoji in entry.mood_emojis.split(',') %}
+                    {% if emoji.strip() %}
+                    <span style="margin-right: 8px; display: inline-block; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.3)'" onmouseout="this.style.transform='scale(1)'">{{ emoji.strip() }}</span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="journal-entry-content">{{ entry.content }}</div>
+            {% if entry.image_path %}
+            <img src="{{ url_for('static', filename=entry.image_path) }}" alt="Mood board image" class="journal-entry-image">
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-state-icon">🎨</div>
+            <p>No mood board entries yet. Create your first entry!</p>
+        </div>
+    {% endif %}
+</div>
+
+
+<!-- Add Journal Entry Modal -->
+<div class="modal fade" id="addJournalModal" tabindex="-1" aria-labelledby="addJournalModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addJournalModalLabel">New Journal Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('journal') }}" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ get_csrf_token() }}"/>
+                <div class="modal-body">
+                    <input type="hidden" name="entry_type" id="modalEntryType" value="">
+                    
+                    <div class="mb-3">
+                        {{ form.date.label(class="form-label") }}
+                        {{ form.date(class="form-control", type="date") }}
+                        {% if form.date.errors %}
+                            <div class="text-danger">
+                                {% for error in form.date.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="titleField">
+                        <label class="form-label" id="titleLabel">Title</label>
+                        {{ form.title(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.title.description }}</small>
+                        {% if form.title.errors %}
+                            <div class="text-danger">
+                                {% for error in form.title.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="scriptureField" style="display: none;">
+                        <label class="form-label">Scripture</label>
+                        <div class="input-group mb-2">
+                            <select class="form-select" id="bibleBook" style="flex: 0 0 35%;">
+                                <option value="">Select Book</option>
+                                <option value="Genesis">Genesis</option>
+                                <option value="Exodus">Exodus</option>
+                                <option value="Leviticus">Leviticus</option>
+                                <option value="Numbers">Numbers</option>
+                                <option value="Deuteronomy">Deuteronomy</option>
+                                <option value="Joshua">Joshua</option>
+                                <option value="Judges">Judges</option>
+                                <option value="Ruth">Ruth</option>
+                                <option value="1 Samuel">1 Samuel</option>
+                                <option value="2 Samuel">2 Samuel</option>
+                                <option value="1 Kings">1 Kings</option>
+                                <option value="2 Kings">2 Kings</option>
+                                <option value="1 Chronicles">1 Chronicles</option>
+                                <option value="2 Chronicles">2 Chronicles</option>
+                                <option value="Ezra">Ezra</option>
+                                <option value="Nehemiah">Nehemiah</option>
+                                <option value="Esther">Esther</option>
+                                <option value="Job">Job</option>
+                                <option value="Psalms">Psalms</option>
+                                <option value="Proverbs">Proverbs</option>
+                                <option value="Ecclesiastes">Ecclesiastes</option>
+                                <option value="Song of Songs">Song of Songs</option>
+                                <option value="Isaiah">Isaiah</option>
+                                <option value="Jeremiah">Jeremiah</option>
+                                <option value="Lamentations">Lamentations</option>
+                                <option value="Ezekiel">Ezekiel</option>
+                                <option value="Daniel">Daniel</option>
+                                <option value="Hosea">Hosea</option>
+                                <option value="Joel">Joel</option>
+                                <option value="Amos">Amos</option>
+                                <option value="Obadiah">Obadiah</option>
+                                <option value="Jonah">Jonah</option>
+                                <option value="Micah">Micah</option>
+                                <option value="Nahum">Nahum</option>
+                                <option value="Habakkuk">Habakkuk</option>
+                                <option value="Zephaniah">Zephaniah</option>
+                                <option value="Haggai">Haggai</option>
+                                <option value="Zechariah">Zechariah</option>
+                                <option value="Malachi">Malachi</option>
+                                <option value="Matthew">Matthew</option>
+                                <option value="Mark">Mark</option>
+                                <option value="Luke">Luke</option>
+                                <option value="John">John</option>
+                                <option value="Acts">Acts</option>
+                                <option value="Romans">Romans</option>
+                                <option value="1 Corinthians">1 Corinthians</option>
+                                <option value="2 Corinthians">2 Corinthians</option>
+                                <option value="Galatians">Galatians</option>
+                                <option value="Ephesians">Ephesians</option>
+                                <option value="Philippians">Philippians</option>
+                                <option value="Colossians">Colossians</option>
+                                <option value="1 Thessalonians">1 Thessalonians</option>
+                                <option value="2 Thessalonians">2 Thessalonians</option>
+                                <option value="1 Timothy">1 Timothy</option>
+                                <option value="2 Timothy">2 Timothy</option>
+                                <option value="Titus">Titus</option>
+                                <option value="Philemon">Philemon</option>
+                                <option value="Hebrews">Hebrews</option>
+                                <option value="James">James</option>
+                                <option value="1 Peter">1 Peter</option>
+                                <option value="2 Peter">2 Peter</option>
+                                <option value="1 John">1 John</option>
+                                <option value="2 John">2 John</option>
+                                <option value="3 John">3 John</option>
+                                <option value="Jude">Jude</option>
+                                <option value="Revelation">Revelation</option>
+                            </select>
+                            <input type="number" class="form-control" id="bibleChapter" placeholder="Chapter" min="1" max="150" step="1" value="" style="flex: 0 0 20%; -moz-appearance: textfield;">
+                            <span class="input-group-text">:</span>
+                            <input type="number" class="form-control" id="bibleVerse" placeholder="Verse" min="1" max="176" step="1" value="" style="flex: 0 0 20%; -moz-appearance: textfield;">
+                            <button type="button" class="btn btn-outline-secondary" id="addVerseBtn" style="flex: 0 0 25%;">Add Verse</button>
+                        </div>
+                        <div id="selectedVerses" class="mb-2" style="min-height: 30px; padding: 8px; background: #f8f9fa; border-radius: 5px; font-size: 0.9rem;"></div>
+                        <input type="text" class="form-control d-none" name="title" id="scriptureInput" value="">
+                        <small class="form-text text-muted">Select Bible book, chapter, and verse(s). You can add multiple verses.</small>
+                    </div>
+                    
+                    <div class="mb-3" id="emojiField" style="display: none;">
+                        <label class="form-label">Select Your Mood Emojis</label>
+                        <div class="emoji-picker" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); gap: 10px; padding: 15px; background: #f8f9fa; border-radius: 10px; max-height: 300px; overflow-y: auto;">
+                            <!-- Happy/Positive Emotions -->
+                            <span class="emoji-option" data-emoji="😊" title="Happy">😊</span>
+                            <span class="emoji-option" data-emoji="😄" title="Very Happy">😄</span>
+                            <span class="emoji-option" data-emoji="😃" title="Excited">😃</span>
+                            <span class="emoji-option" data-emoji="😁" title="Grinning">😁</span>
+                            <span class="emoji-option" data-emoji="😆" title="Laughing">😆</span>
+                            <span class="emoji-option" data-emoji="🥰" title="Loved">🥰</span>
+                            <span class="emoji-option" data-emoji="😍" title="In Love">😍</span>
+                            <span class="emoji-option" data-emoji="🤗" title="Hugging">🤗</span>
+                            <span class="emoji-option" data-emoji="😎" title="Cool">😎</span>
+                            <span class="emoji-option" data-emoji="🤩" title="Star-struck">🤩</span>
+                            <span class="emoji-option" data-emoji="🥳" title="Celebrating">🥳</span>
+                            <span class="emoji-option" data-emoji="😇" title="Blessed">😇</span>
+                            <span class="emoji-option" data-emoji="🙂" title="Smiling">🙂</span>
+                            <span class="emoji-option" data-emoji="😌" title="Relieved">😌</span>
+                            <span class="emoji-option" data-emoji="😋" title="Yummy">😋</span>
+                            
+                            <!-- Neutral Emotions -->
+                            <span class="emoji-option" data-emoji="😐" title="Neutral">😐</span>
+                            <span class="emoji-option" data-emoji="😑" title="Expressionless">😑</span>
+                            <span class="emoji-option" data-emoji="🤔" title="Thinking">🤔</span>
+                            <span class="emoji-option" data-emoji="😶" title="Speechless">😶</span>
+                            <span class="emoji-option" data-emoji="😏" title="Smirking">😏</span>
+                            <span class="emoji-option" data-emoji="🙄" title="Rolling Eyes">🙄</span>
+                            
+                            <!-- Sad/Negative Emotions -->
+                            <span class="emoji-option" data-emoji="😔" title="Sad">😔</span>
+                            <span class="emoji-option" data-emoji="😟" title="Worried">😟</span>
+                            <span class="emoji-option" data-emoji="😕" title="Confused">😕</span>
+                            <span class="emoji-option" data-emoji="🙁" title="Slightly Frowning">🙁</span>
+                            <span class="emoji-option" data-emoji="😞" title="Disappointed">😞</span>
+                            <span class="emoji-option" data-emoji="😢" title="Crying">😢</span>
+                            <span class="emoji-option" data-emoji="😭" title="Loudly Crying">😭</span>
+                            <span class="emoji-option" data-emoji="😤" title="Huffing">😤</span>
+                            <span class="emoji-option" data-emoji="😠" title="Angry">😠</span>
+                            <span class="emoji-option" data-emoji="😡" title="Very Angry">😡</span>
+                            <span class="emoji-option" data-emoji="🤬" title="Swearing">🤬</span>
+                            <span class="emoji-option" data-emoji="😰" title="Anxious">😰</span>
+                            <span class="emoji-option" data-emoji="😨" title="Fearful">😨</span>
+                            <span class="emoji-option" data-emoji="😱" title="Screaming">😱</span>
+                            <span class="emoji-option" data-emoji="😓" title="Sweating">😓</span>
+                            <span class="emoji-option" data-emoji="😥" title="Disappointed but Relieved">😥</span>
+                            
+                            <!-- Tired/Sick -->
+                            <span class="emoji-option" data-emoji="😴" title="Sleeping">😴</span>
+                            <span class="emoji-option" data-emoji="😪" title="Sleepy">😪</span>
+                            <span class="emoji-option" data-emoji="🤤" title="Drooling">🤤</span>
+                            <span class="emoji-option" data-emoji="😷" title="Sick">😷</span>
+                            <span class="emoji-option" data-emoji="🤒" title="Fever">🤒</span>
+                            <span class="emoji-option" data-emoji="🤕" title="Injured">🤕</span>
+                            <span class="emoji-option" data-emoji="🥴" title="Woozy">🥴</span>
+                            <span class="emoji-option" data-emoji="😵" title="Dizzy">😵</span>
+                            
+                            <!-- Spiritual/Peaceful -->
+                            <span class="emoji-option" data-emoji="🙏" title="Praying">🙏</span>
+                            <span class="emoji-option" data-emoji="☮️" title="Peace">☮️</span>
+                            <span class="emoji-option" data-emoji="🕊️" title="Dove">🕊️</span>
+                            <span class="emoji-option" data-emoji="✨" title="Sparkles">✨</span>
+                            <span class="emoji-option" data-emoji="🌟" title="Star">🌟</span>
+                            <span class="emoji-option" data-emoji="💫" title="Dizzy Star">💫</span>
+                            <span class="emoji-option" data-emoji="💝" title="Heart with Ribbon">💝</span>
+                            <span class="emoji-option" data-emoji="💖" title="Sparkling Heart">💖</span>
+                            <span class="emoji-option" data-emoji="💗" title="Growing Heart">💗</span>
+                            <span class="emoji-option" data-emoji="💓" title="Beating Heart">💓</span>
+                            <span class="emoji-option" data-emoji="💕" title="Two Hearts">💕</span>
+                            <span class="emoji-option" data-emoji="💞" title="Revolving Hearts">💞</span>
+                            <span class="emoji-option" data-emoji="💯" title="100">💯</span>
+                            <span class="emoji-option" data-emoji="🔥" title="Fire">🔥</span>
+                            <span class="emoji-option" data-emoji="💪" title="Strong">💪</span>
+                            <span class="emoji-option" data-emoji="🌈" title="Rainbow">🌈</span>
+                            <span class="emoji-option" data-emoji="☀️" title="Sun">☀️</span>
+                            <span class="emoji-option" data-emoji="🌙" title="Moon">🌙</span>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Selected emojis:</small>
+                            <div id="selectedEmojis" style="min-height: 30px; padding: 8px; background: white; border: 1px solid #dee2e6; border-radius: 5px; font-size: 1.5rem; margin-top: 5px;"></div>
+                        </div>
+                        {{ form.mood_emojis(class="form-control d-none") }}
+                        <small class="form-text text-muted">Click emojis to select your mood. You can select multiple emojis.</small>
+                        {% if form.mood_emojis.errors %}
+                            <div class="text-danger">
+                                {% for error in form.mood_emojis.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="imageField" style="display: none;">
+                        {{ form.image.label(class="form-label") }}
+                        {{ form.image(class="form-control") }}
+                        <small class="form-text text-muted">{{ form.image.description }}</small>
+                        {% if form.image.errors %}
+                            <div class="text-danger">
+                                {% for error in form.image.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="prayerListField" style="display: none;">
+                        <label class="form-label">Prayer List</label>
+                        <div id="prayerInputs">
+                            <div class="prayer-item mb-2">
+                                <div class="input-group">
+                                    <span class="input-group-text">Prayer 1</span>
+                                    <input type="text" class="form-control prayer-input" name="prayer_1" placeholder="Enter your prayer request">
+                                    <button type="button" class="btn btn-outline-danger remove-prayer" style="display: none;">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="addPrayerBtn">
+                            + Add Another Prayer
+                        </button>
+                        <input type="hidden" id="prayerListData" name="prayer_list_data">
+                        <small class="form-text text-muted">Add multiple prayer requests. They will be displayed as a bulleted list.</small>
+                    </div>
+                    
+                    <div class="mb-3" id="contentField">
+                        <label class="form-label" id="contentLabel">Content</label>
+                        {{ form.content(class="form-control", rows="8") }}
+                        {% if form.content.errors %}
+                            <div class="text-danger">
+                                {% for error in form.content.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="observationField" style="display: none;">
+                        <label class="form-label">Observation</label>
+                        {{ form.content(class="form-control", rows="6") }}
+                        <small class="form-text text-muted">What do you observe from this scripture?</small>
+                        {% if form.content.errors %}
+                            <div class="text-danger">
+                                {% for error in form.content.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="applicationField" style="display: none;">
+                        <label class="form-label">Application</label>
+                        {{ form.application(class="form-control", rows="6") }}
+                        <small class="form-text text-muted">How can you apply this to your life?</small>
+                        {% if form.application.errors %}
+                            <div class="text-danger">
+                                {% for error in form.application.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="prayerField" style="display: none;">
+                        <label class="form-label">Prayer</label>
+                        {{ form.prayer_text(class="form-control", rows="6") }}
+                        <small class="form-text text-muted">Write your prayer based on this devotion.</small>
+                        {% if form.prayer_text.errors %}
+                            <div class="text-danger">
+                                {% for error in form.prayer_text.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .emoji-option {
+        font-size: 2rem;
+        cursor: pointer;
+        padding: 8px;
+        text-align: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        user-select: none;
+        background: white;
+        border: 2px solid transparent;
+    }
+    
+    .emoji-option:hover {
+        background: #e9ecef;
+        transform: scale(1.1);
+        border-color: #667eea;
+    }
+    
+    .emoji-option.selected {
+        background: #667eea;
+        border-color: #667eea;
+        transform: scale(1.15);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+</style>
+
+<script>
+// Emoji picker functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const entryTypeSelect = document.querySelector('select[name="entry_type"]') || document.getElementById('modalEntryType');
+    const imageField = document.getElementById('imageField');
+    const emojiField = document.getElementById('emojiField');
+    const moodEmojisInput = document.querySelector('input[name="mood_emojis"]');
+    const selectedEmojisDiv = document.getElementById('selectedEmojis');
+    const emojiOptions = document.querySelectorAll('.emoji-option');
+    let selectedEmojis = [];
+    
+    // Check if we're in the modal and get entry type from hidden input
+    const modalEntryType = document.getElementById('modalEntryType');
+    let currentEntryType = '';
+    if (modalEntryType) {
+        currentEntryType = modalEntryType.value;
+    } else if (entryTypeSelect && entryTypeSelect.tagName === 'SELECT') {
+        currentEntryType = entryTypeSelect.value;
+    }
+    
+    // Update display and hidden input
+    function updateSelectedEmojisDisplay() {
+        if (selectedEmojisDiv) {
+            selectedEmojisDiv.innerHTML = selectedEmojis.length > 0 
+                ? selectedEmojis.join(' ') 
+                : '<span class="text-muted">No emojis selected</span>';
+        }
+        if (moodEmojisInput) {
+            moodEmojisInput.value = selectedEmojis.join(',');
+        }
+    }
+    
+    // Load existing emojis if editing
+    {% if form.mood_emojis.data %}
+    const existingEmojis = '{{ form.mood_emojis.data }}'.split(',').filter(e => e.trim());
+    selectedEmojis = existingEmojis;
+    updateSelectedEmojisDisplay();
+    {% endif %}
+    
+    // Prayer list functionality
+    const prayerListField = document.getElementById('prayerListField');
+    const contentField = document.getElementById('contentField');
+    const addPrayerBtn = document.getElementById('addPrayerBtn');
+    const prayerInputs = document.getElementById('prayerInputs');
+    const prayerListData = document.getElementById('prayerListData');
+    let prayerCount = 1;
+    
+    // Load existing prayers if editing
+    {% if form.content.data and form.entry_type.data == 'prayer' %}
+    const existingPrayers = '{{ form.content.data|replace("'", "\\'")|replace("\n", "\\n") }}'.split('\\n').filter(p => p.trim());
+    if (existingPrayers.length > 0) {
+        prayerInputs.innerHTML = '';
+        existingPrayers.forEach((prayer, index) => {
+            addPrayerInput(index + 1, prayer.trim());
+        });
+        prayerCount = existingPrayers.length;
+    }
+    {% endif %}
+    
+    function addPrayerInput(num, value = '') {
+        const prayerItem = document.createElement('div');
+        prayerItem.className = 'prayer-item mb-2';
+        prayerItem.innerHTML = `
+            <div class="input-group">
+                <span class="input-group-text">Prayer ${num}</span>
+                <input type="text" class="form-control prayer-input" name="prayer_${num}" value="${value.replace(/"/g, '&quot;')}" placeholder="Enter your prayer request">
+                <button type="button" class="btn btn-outline-danger remove-prayer">Remove</button>
+            </div>
+        `;
+        prayerInputs.appendChild(prayerItem);
+        
+        // Add remove functionality
+        prayerItem.querySelector('.remove-prayer').addEventListener('click', function() {
+            prayerItem.remove();
+            updatePrayerNumbers();
+            updatePrayerListData();
+        });
+        
+        // Update prayer list data when input changes
+        prayerItem.querySelector('.prayer-input').addEventListener('input', updatePrayerListData);
+    }
+    
+    function updatePrayerNumbers() {
+        const items = prayerInputs.querySelectorAll('.prayer-item');
+        items.forEach((item, index) => {
+            const label = item.querySelector('.input-group-text');
+            label.textContent = `Prayer ${index + 1}`;
+        });
+        prayerCount = items.length;
+    }
+    
+    function updatePrayerListData() {
+        const prayers = Array.from(prayerInputs.querySelectorAll('.prayer-input'))
+            .map(input => input.value.trim())
+            .filter(p => p);
+        if (prayerListData) {
+            prayerListData.value = JSON.stringify(prayers);
+        }
+        
+        // Also update the content field for form submission
+        const contentTextarea = document.querySelector('textarea[name="content"]');
+        if (contentTextarea) {
+            contentTextarea.value = prayers.join('\n');
+        }
+    }
+    
+    if (addPrayerBtn) {
+        addPrayerBtn.addEventListener('click', function() {
+            prayerCount++;
+            addPrayerInput(prayerCount);
+        });
+    }
+    
+    // Initialize prayer inputs if they exist
+    if (prayerInputs) {
+        const existingInputs = prayerInputs.querySelectorAll('.prayer-input');
+        existingInputs.forEach(input => {
+            input.addEventListener('input', updatePrayerListData);
+        });
+        const removeButtons = prayerInputs.querySelectorAll('.remove-prayer');
+        removeButtons.forEach(btn => {
+            if (prayerInputs.querySelectorAll('.prayer-item').length > 1) {
+                btn.style.display = 'block';
+            }
+            btn.addEventListener('click', function() {
+                this.closest('.prayer-item').remove();
+                updatePrayerNumbers();
+                updatePrayerListData();
+            });
+        });
+    }
+    
+    // Toggle fields based on entry type
+    function toggleFields() {
+        const entryType = (entryTypeSelect && entryTypeSelect.tagName === 'SELECT') 
+            ? entryTypeSelect.value 
+            : (modalEntryType ? modalEntryType.value : '');
+        const titleLabel = document.getElementById('titleLabel');
+        const contentLabel = document.getElementById('contentLabel');
+        const titleField = document.getElementById('titleField');
+        const scriptureField = document.getElementById('scriptureField');
+        const observationField = document.getElementById('observationField');
+        const applicationField = document.getElementById('applicationField');
+        const prayerField = document.getElementById('prayerField');
+            
+        if (entryType === 'mood_board') {
+            if (imageField) imageField.style.display = 'block';
+            if (emojiField) emojiField.style.display = 'block';
+            if (prayerListField) prayerListField.style.display = 'none';
+            if (contentField) contentField.style.display = 'block';
+            if (titleField) titleField.style.display = 'block';
+            if (scriptureField) scriptureField.style.display = 'none';
+            if (observationField) observationField.style.display = 'none';
+            if (applicationField) applicationField.style.display = 'none';
+            if (prayerField) prayerField.style.display = 'none';
+            if (titleLabel) titleLabel.textContent = 'Title';
+            if (contentLabel) contentLabel.textContent = 'Content';
+        } else if (entryType === 'prayer') {
+            if (imageField) imageField.style.display = 'none';
+            if (emojiField) emojiField.style.display = 'none';
+            if (prayerListField) prayerListField.style.display = 'block';
+            if (contentField) contentField.style.display = 'none';
+            if (titleField) titleField.style.display = 'block';
+            if (scriptureField) scriptureField.style.display = 'none';
+            if (observationField) observationField.style.display = 'none';
+            if (applicationField) applicationField.style.display = 'none';
+            if (prayerField) prayerField.style.display = 'none';
+            if (titleLabel) titleLabel.textContent = 'Title';
+            if (contentLabel) contentLabel.textContent = 'Content';
+            selectedEmojis = [];
+            updateSelectedEmojisDisplay();
+        } else if (entryType === 'answered_prayer') {
+            if (imageField) imageField.style.display = 'none';
+            if (emojiField) emojiField.style.display = 'none';
+            if (prayerListField) prayerListField.style.display = 'none';
+            if (contentField) contentField.style.display = 'block';
+            if (titleField) titleField.style.display = 'block';
+            if (scriptureField) scriptureField.style.display = 'none';
+            if (observationField) observationField.style.display = 'none';
+            if (applicationField) applicationField.style.display = 'none';
+            if (prayerField) prayerField.style.display = 'none';
+            if (titleLabel) titleLabel.textContent = 'Answered Prayer';
+            if (contentLabel) contentLabel.textContent = 'Tell Us Your Story!';
+            selectedEmojis = [];
+            updateSelectedEmojisDisplay();
+        } else if (entryType === 'devotion') {
+            if (imageField) imageField.style.display = 'none';
+            if (emojiField) emojiField.style.display = 'none';
+            if (prayerListField) prayerListField.style.display = 'none';
+            if (contentField) contentField.style.display = 'none';
+            if (titleField) titleField.style.display = 'none';
+            if (scriptureField) scriptureField.style.display = 'block';
+            if (observationField) observationField.style.display = 'block';
+            if (applicationField) applicationField.style.display = 'block';
+            if (prayerField) prayerField.style.display = 'block';
+            selectedEmojis = [];
+            updateSelectedEmojisDisplay();
+        } else {
+            if (imageField) imageField.style.display = 'none';
+            if (emojiField) emojiField.style.display = 'none';
+            if (prayerListField) prayerListField.style.display = 'none';
+            if (contentField) contentField.style.display = 'block';
+            if (titleField) titleField.style.display = 'block';
+            if (scriptureField) scriptureField.style.display = 'none';
+            if (observationField) observationField.style.display = 'none';
+            if (applicationField) applicationField.style.display = 'none';
+            if (prayerField) prayerField.style.display = 'none';
+            if (titleLabel) titleLabel.textContent = 'Title';
+            if (contentLabel) contentLabel.textContent = 'Content';
+            selectedEmojis = [];
+            updateSelectedEmojisDisplay();
+        }
+    }
+    
+    // Listen to hidden input changes
+    if (modalEntryType) {
+        modalEntryType.addEventListener('change', toggleFields);
+    }
+    
+    // Handle emoji selection
+    if (emojiOptions && emojiOptions.length > 0) {
+        emojiOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const emoji = this.getAttribute('data-emoji');
+                const index = selectedEmojis.indexOf(emoji);
+                
+                if (index > -1) {
+                    // Deselect
+                    selectedEmojis.splice(index, 1);
+                    this.classList.remove('selected');
+                } else {
+                    // Select
+                    selectedEmojis.push(emoji);
+                    this.classList.add('selected');
+                }
+                
+                updateSelectedEmojisDisplay();
+            });
+            
+            // Mark as selected if already in selectedEmojis
+            const emoji = option.getAttribute('data-emoji');
+            if (selectedEmojis.includes(emoji)) {
+                option.classList.add('selected');
+            }
+        });
+    }
+    
+    // Bible verse picker functionality
+    const bibleBook = document.getElementById('bibleBook');
+    const bibleChapter = document.getElementById('bibleChapter');
+    const bibleVerse = document.getElementById('bibleVerse');
+    const addVerseBtn = document.getElementById('addVerseBtn');
+    const selectedVerses = document.getElementById('selectedVerses');
+    const scriptureInput = document.getElementById('scriptureInput');
+    let selectedVersesList = [];
+    
+    // Bible book data with chapter and verse counts
+    const bibleData = {
+        "Genesis": { chapters: 50, verses: [31,25,24,26,32,22,24,22,29,32,32,20,18,24,21,16,27,33,38,18,34,24,20,67,34,35,46,22,35,43,55,32,33,34,16,30,29,20,17,25,6,14,23,28,25,31,40,22,33,37] },
+        "Exodus": { chapters: 40, verses: [22,25,22,31,23,30,25,32,35,29,10,51,22,31,27,36,16,27,25,26,36,31,33,18,40,37,21,43,46,38,18,35,23,35,35,38,29,31,43,38] },
+        "Leviticus": { chapters: 27, verses: [17,16,17,35,19,30,38,36,24,20,47,8,59,57,33,34,16,30,37,27,24,33,44,23,55,46,34] },
+        "Numbers": { chapters: 36, verses: [54,34,51,49,31,27,89,26,23,36,35,16,33,45,41,50,13,32,22,29,35,41,30,25,18,65,23,31,40,16,54,42,56,29,34,13] },
+        "Deuteronomy": { chapters: 34, verses: [46,37,29,49,33,25,26,20,29,22,32,32,18,29,23,22,20,22,21,20,23,30,25,22,19,19,26,68,29,20,30,52,29,12] },
+        "Joshua": { chapters: 24, verses: [18,24,17,24,15,27,26,35,27,43,23,24,33,15,63,10,18,28,51,9,45,34,16,33] },
+        "Judges": { chapters: 21, verses: [36,23,31,24,31,40,25,35,57,18,40,15,25,20,20,31,13,31,30,48,25] },
+        "Ruth": { chapters: 4, verses: [22,23,18,22] },
+        "1 Samuel": { chapters: 31, verses: [28,36,21,22,12,21,17,22,27,27,15,25,23,52,35,23,58,30,24,42,15,23,29,22,44,25,12,25,11,31,13] },
+        "2 Samuel": { chapters: 24, verses: [27,32,39,12,25,23,29,18,13,19,27,31,39,33,37,23,29,33,43,26,22,51,39,25] },
+        "1 Kings": { chapters: 22, verses: [53,46,28,34,18,38,51,66,28,29,43,33,34,31,34,34,24,46,21,43,29,53] },
+        "2 Kings": { chapters: 25, verses: [18,25,27,44,27,33,20,29,37,36,21,21,25,29,38,20,41,37,37,21,26,20,37,20,30] },
+        "1 Chronicles": { chapters: 29, verses: [54,55,24,43,26,81,40,40,44,14,47,40,14,17,29,43,27,17,19,8,30,19,32,31,31,32,34,21,30] },
+        "2 Chronicles": { chapters: 36, verses: [17,18,17,22,14,42,22,18,31,19,23,16,22,15,19,14,19,34,11,37,20,12,21,27,28,23,9,27,36,27,21,33,25,33,27,23] },
+        "Ezra": { chapters: 10, verses: [11,70,13,24,17,22,28,36,15,44] },
+        "Nehemiah": { chapters: 13, verses: [11,20,32,23,19,19,73,18,38,39,36,47,31] },
+        "Esther": { chapters: 10, verses: [22,23,15,17,14,14,10,17,32,3] },
+        "Job": { chapters: 42, verses: [22,13,26,21,27,30,21,22,35,22,20,25,28,22,35,22,16,21,29,29,34,30,17,25,6,14,23,28,25,31,40,22,33,37,16,33,24,41,30,24,34,17] },
+        "Psalms": { chapters: 150, verses: [6,12,8,8,12,10,17,9,20,18,7,8,6,7,5,11,15,50,14,9,13,31,6,10,22,12,14,9,11,12,24,11,22,22,28,12,40,22,13,17,13,11,5,26,17,11,9,14,20,23,19,9,6,7,23,13,11,11,17,12,8,12,11,10,13,20,7,35,36,5,24,20,28,23,10,12,20,72,13,19,16,8,18,12,13,17,7,18,52,17,16,15,5,23,11,13,12,9,9,5,8,28,22,35,45,48,43,13,31,7,10,10,9,8,18,19,2,29,176,7,8,9,4,8,5,6,5,6,8,8,3,18,3,3,21,26,9,8,24,13,10,7,12,15,21,10,20,14,9,6] },
+        "Proverbs": { chapters: 31, verses: [33,22,35,27,23,35,27,36,18,32,31,28,25,35,33,33,28,24,29,30,31,29,35,34,28,28,27,28,27,33,31] },
+        "Ecclesiastes": { chapters: 12, verses: [18,26,22,16,20,12,29,17,18,20,10,14] },
+        "Song of Songs": { chapters: 8, verses: [17,17,11,16,16,13,13,14] },
+        "Isaiah": { chapters: 66, verses: [31,22,26,6,30,13,25,22,21,34,16,6,22,32,9,14,21,28,25,6,10,22,18,23,12,21,13,29,24,33,9,20,24,17,10,22,38,22,8,31,29,25,28,28,25,13,15,22,26,11,23,15,12,17,13,12,21,14,21,22,11,12,19,12,25,24] },
+        "Jeremiah": { chapters: 52, verses: [19,37,25,31,31,30,34,22,26,25,23,17,27,22,21,21,27,23,15,18,14,30,40,10,38,24,22,17,32,24,40,44,26,22,19,32,21,28,18,16,18,22,13,30,5,28,7,47,39,46,64,34] },
+        "Lamentations": { chapters: 5, verses: [22,22,66,22,22] },
+        "Ezekiel": { chapters: 48, verses: [28,10,27,17,17,14,27,18,11,22,25,28,23,23,8,63,24,32,14,49,32,31,49,27,17,21,36,26,21,26,18,32,33,31,15,38,28,23,29,49,26,20,27,31,25,24,23,35] },
+        "Daniel": { chapters: 12, verses: [21,49,30,37,31,28,28,27,27,21,45,13] },
+        "Hosea": { chapters: 14, verses: [11,23,5,19,15,11,16,14,17,15,12,14,16,9] },
+        "Joel": { chapters: 3, verses: [20,32,21] },
+        "Amos": { chapters: 9, verses: [15,16,15,13,27,14,17,14,15] },
+        "Obadiah": { chapters: 1, verses: [21] },
+        "Jonah": { chapters: 4, verses: [17,10,10,11] },
+        "Micah": { chapters: 7, verses: [16,13,12,13,15,16,20] },
+        "Nahum": { chapters: 3, verses: [15,13,19] },
+        "Habakkuk": { chapters: 3, verses: [17,20,19] },
+        "Zephaniah": { chapters: 3, verses: [18,15,20] },
+        "Haggai": { chapters: 2, verses: [15,23] },
+        "Zechariah": { chapters: 14, verses: [21,13,10,14,11,15,14,23,17,12,17,14,9,21] },
+        "Malachi": { chapters: 4, verses: [14,17,18,6] },
+        "Matthew": { chapters: 28, verses: [25,23,17,25,48,34,29,34,38,42,30,50,58,36,39,28,27,35,30,34,46,46,39,51,46,75,66,20] },
+        "Mark": { chapters: 16, verses: [45,28,35,41,43,56,37,38,50,52,33,44,37,72,47,20] },
+        "Luke": { chapters: 24, verses: [80,52,38,44,39,49,50,56,62,42,54,59,35,35,32,31,37,43,48,47,38,71,56,53] },
+        "John": { chapters: 21, verses: [51,25,36,54,47,71,53,59,41,42,57,50,38,31,27,33,26,40,42,31,25] },
+        "Acts": { chapters: 28, verses: [26,47,26,37,42,15,60,40,43,48,30,25,52,28,41,40,34,28,41,38,40,30,35,27,27,32,44,31] },
+        "Romans": { chapters: 16, verses: [32,29,31,25,21,23,25,39,33,21,36,21,14,23,33,27] },
+        "1 Corinthians": { chapters: 16, verses: [31,16,23,21,13,20,40,13,27,33,34,31,13,40,58,24] },
+        "2 Corinthians": { chapters: 13, verses: [24,17,18,18,21,18,16,24,15,18,33,21,14] },
+        "Galatians": { chapters: 6, verses: [24,21,29,31,26,18] },
+        "Ephesians": { chapters: 6, verses: [23,22,21,32,33,24] },
+        "Philippians": { chapters: 4, verses: [30,30,21,23] },
+        "Colossians": { chapters: 4, verses: [29,23,25,18] },
+        "1 Thessalonians": { chapters: 5, verses: [10,20,13,18,28] },
+        "2 Thessalonians": { chapters: 3, verses: [18,17,18] },
+        "1 Timothy": { chapters: 6, verses: [20,15,16,16,25,21] },
+        "2 Timothy": { chapters: 4, verses: [18,26,17,22] },
+        "Titus": { chapters: 3, verses: [16,15,15] },
+        "Philemon": { chapters: 1, verses: [25] },
+        "Hebrews": { chapters: 13, verses: [14,18,19,16,14,20,28,13,28,39,40,29,25] },
+        "James": { chapters: 5, verses: [27,26,18,17,20] },
+        "1 Peter": { chapters: 5, verses: [25,25,22,19,14] },
+        "2 Peter": { chapters: 3, verses: [22,22,18] },
+        "1 John": { chapters: 5, verses: [10,29,24,21,21] },
+        "2 John": { chapters: 1, verses: [13] },
+        "3 John": { chapters: 1, verses: [15] },
+        "Jude": { chapters: 1, verses: [25] },
+        "Revelation": { chapters: 22, verses: [20,29,22,11,14,17,17,13,21,11,19,17,18,20,8,21,18,24,21,15,27,21] }
+    };
+    
+    function updateChapterMax() {
+        const book = bibleBook ? bibleBook.value : '';
+        if (book && bibleData[book] && bibleChapter) {
+            bibleChapter.max = bibleData[book].chapters;
+            if (parseInt(bibleChapter.value) > bibleData[book].chapters) {
+                bibleChapter.value = bibleData[book].chapters;
+            }
+        }
+    }
+    
+    function updateVerseMax() {
+        const book = bibleBook ? bibleBook.value : '';
+        const chapter = bibleChapter ? parseInt(bibleChapter.value) : 0;
+        if (book && bibleData[book] && chapter > 0 && chapter <= bibleData[book].chapters && bibleVerse) {
+            const maxVerses = bibleData[book].verses[chapter - 1];
+            bibleVerse.max = maxVerses;
+            if (parseInt(bibleVerse.value) > maxVerses) {
+                bibleVerse.value = maxVerses;
+            }
+        }
+    }
+    
+    // Update max values when book or chapter changes
+    if (bibleBook) {
+        bibleBook.addEventListener('change', function() {
+            updateChapterMax();
+            updateVerseMax();
+        });
+    }
+    
+    if (bibleChapter) {
+        bibleChapter.addEventListener('change', function() {
+            updateVerseMax();
+        });
+        bibleChapter.addEventListener('input', function() {
+            updateVerseMax();
+        });
+    }
+    
+    // Custom spinner behavior: up arrow decreases, down arrow increases (reversed)
+    if (bibleChapter) {
+        // Override mouse wheel
+        bibleChapter.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            const book = bibleBook ? bibleBook.value : '';
+            const maxChapters = (book && bibleData[book]) ? bibleData[book].chapters : 150;
+            if (e.deltaY > 0) {
+                // Scroll down = increase
+                this.value = Math.min(maxChapters, parseInt(this.value || 1) + 1);
+            } else {
+                // Scroll up = decrease
+                this.value = Math.max(1, parseInt(this.value || 1) - 1);
+            }
+            updateVerseMax();
+        });
+        
+        // Override spinner button clicks
+        bibleChapter.addEventListener('mousedown', function(e) {
+            const rect = this.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const height = rect.height;
+            const input = this;
+            
+            // Check if click is on spinner buttons (right side of input)
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            
+            // Spinner buttons are typically on the right side
+            if (clickX > width - 30) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const book = bibleBook ? bibleBook.value : '';
+                const maxChapters = (book && bibleData[book]) ? bibleData[book].chapters : 150;
+                
+                // Determine which spinner button was clicked
+                // Top half = up arrow (should decrease)
+                // Bottom half = down arrow (should increase)
+                if (clickY < height / 2) {
+                    // Up arrow clicked - decrease
+                    input.value = Math.max(1, parseInt(input.value || 1) - 1);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                } else {
+                    // Down arrow clicked - increase
+                    input.value = Math.min(maxChapters, parseInt(input.value || 1) + 1);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                updateVerseMax();
+            }
+        });
+    }
+    
+    if (bibleVerse) {
+        // Override mouse wheel
+        bibleVerse.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            const book = bibleBook ? bibleBook.value : '';
+            const chapter = bibleChapter ? parseInt(bibleChapter.value) : 0;
+            let maxVerses = 176; // Default max
+            if (book && bibleData[book] && chapter > 0 && chapter <= bibleData[book].chapters) {
+                maxVerses = bibleData[book].verses[chapter - 1];
+            }
+            if (e.deltaY > 0) {
+                // Scroll down = increase
+                this.value = Math.min(maxVerses, parseInt(this.value || 1) + 1);
+            } else {
+                // Scroll up = decrease
+                this.value = Math.max(1, parseInt(this.value || 1) - 1);
+            }
+        });
+        
+        // Override spinner button clicks
+        bibleVerse.addEventListener('mousedown', function(e) {
+            const rect = this.getBoundingClientRect();
+            const clickY = e.clientY - rect.top;
+            const height = rect.height;
+            const input = this;
+            
+            // Check if click is on spinner buttons (right side of input)
+            const clickX = e.clientX - rect.left;
+            const width = rect.width;
+            
+            // Spinner buttons are typically on the right side
+            if (clickX > width - 30) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const book = bibleBook ? bibleBook.value : '';
+                const chapter = bibleChapter ? parseInt(bibleChapter.value) : 0;
+                let maxVerses = 176; // Default max
+                if (book && bibleData[book] && chapter > 0 && chapter <= bibleData[book].chapters) {
+                    maxVerses = bibleData[book].verses[chapter - 1];
+                }
+                
+                // Determine which spinner button was clicked
+                // Top half = up arrow (should decrease)
+                // Bottom half = down arrow (should increase)
+                if (clickY < height / 2) {
+                    // Up arrow clicked - decrease
+                    input.value = Math.max(1, parseInt(input.value || 1) - 1);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                } else {
+                    // Down arrow clicked - increase
+                    input.value = Math.min(maxVerses, parseInt(input.value || 1) + 1);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+        });
+    }
+    
+    // Load existing scripture if editing
+    {% if form.title.data and form.entry_type.data == 'devotion' %}
+    const existingScripture = '{{ form.title.data }}';
+    if (existingScripture) {
+        // Parse existing scripture (could be comma-separated)
+        const verses = existingScripture.split(',').map(v => v.trim()).filter(v => v);
+        selectedVersesList = verses.map(ref => ({
+            reference: ref,
+            content: 'Content loaded from saved entry'
+        }));
+        updateVersesDisplay();
+    }
+    {% endif %}
+    
+    async function addVerse() {
+        const book = bibleBook ? bibleBook.value : '';
+        const chapter = bibleChapter ? bibleChapter.value : '';
+        const verse = bibleVerse ? bibleVerse.value : '';
+        
+        if (!book || !chapter || !verse) {
+            alert('Please select book, chapter, and verse');
+            return;
+        }
+        
+        const verseText = `${book} ${chapter}:${verse}`;
+        // Check if already added (by reference, not content)
+        if (selectedVersesList.some(v => v.reference === verseText)) {
+            return; // Already added
+        }
+        
+        // Fetch verse content from API
+        try {
+            const verseContent = await fetchVerseContent(book, chapter, verse);
+            selectedVersesList.push({
+                reference: verseText,
+                content: verseContent || 'Content not available'
+            });
+            updateVersesDisplay();
+        } catch (error) {
+            console.error('Error fetching verse:', error);
+            // Add without content if API fails
+            selectedVersesList.push({
+                reference: verseText,
+                content: 'Content not available'
+            });
+            updateVersesDisplay();
+        }
+        
+        // Clear inputs
+        if (bibleChapter) bibleChapter.value = '';
+        if (bibleVerse) bibleVerse.value = '';
+    }
+    
+    async function fetchVerseContent(book, chapter, verse) {
+        // Format book name for API
+        const bookFormatted = encodeURIComponent(book);
+        const version = 'NIV';
+        
+        try {
+            // Use a CORS proxy to access Bible Gateway or use a direct Bible API
+            // Option 1: Use Bible.com API (if available)
+            // Option 2: Use a backend endpoint to fetch verse content
+            // Option 3: Use a public Bible API
+            
+            // For now, we'll create a backend route to fetch verse content
+            // This avoids CORS issues and allows us to use any Bible API
+            const response = await fetch('/api/bible-verse', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    book: book,
+                    chapter: parseInt(chapter),
+                    verse: parseInt(verse),
+                    version: version
+                })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.content || `[${book} ${chapter}:${verse} - Content not available]`;
+            } else {
+                return `[${book} ${chapter}:${verse} - Unable to fetch content]`;
+            }
+        } catch (error) {
+            console.error('Error fetching verse content:', error);
+            return `[${book} ${chapter}:${verse} - Error loading content]`;
+        }
+    }
+    
+    function removeVerse(reference) {
+        selectedVersesList = selectedVersesList.filter(v => v.reference !== reference);
+        updateVersesDisplay();
+    }
+    
+    function updateVersesDisplay() {
+        if (selectedVerses) {
+            if (selectedVersesList.length === 0) {
+                selectedVerses.innerHTML = '<span class="text-muted">No verses selected</span>';
+            } else {
+                selectedVerses.innerHTML = selectedVersesList.map(v => {
+                    const verseRef = v.reference || v; // Support both object and string format
+                    const verseContent = v.content || '';
+                    return `
+                        <div class="mb-2 p-2 border rounded" style="background: #f8f9fa;">
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong style="color: #1e40af; font-size: 0.9rem;">${verseRef}</strong>
+                                <button type="button" class="btn-close btn-sm" onclick="removeVerse('${verseRef}')" style="font-size: 0.7rem;"></button>
+                            </div>
+                            <div style="font-size: 0.85rem; color: #4a5568; line-height: 1.5;">${verseContent}</div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        if (scriptureInput) {
+            scriptureInput.value = selectedVersesList.map(v => v.reference || v).join(', ');
+        }
+    }
+    
+    if (addVerseBtn) {
+        addVerseBtn.addEventListener('click', addVerse);
+    }
+    
+    // Allow Enter key to add verse
+    if (bibleVerse) {
+        bibleVerse.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addVerse();
+            }
+        });
+    }
+    
+    // Make removeVerse available globally
+    window.removeVerse = removeVerse;
+    
+    if (entryTypeSelect) {
+        if (entryTypeSelect.tagName === 'SELECT') {
+            entryTypeSelect.addEventListener('change', toggleFields);
+        }
+        toggleFields(); // Initial check
+        
+        // Update prayer list data on form submit
+        const form = (entryTypeSelect.closest ? entryTypeSelect.closest('form') : null) || document.querySelector('#addJournalModal form');
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                const entryType = (entryTypeSelect && entryTypeSelect.tagName === 'SELECT') 
+                    ? entryTypeSelect.value 
+                    : (modalEntryType ? modalEntryType.value : '');
+                if (entryType === 'prayer' && typeof updatePrayerListData === 'function') {
+                    updatePrayerListData();
+                }
+                if (entryType === 'devotion' && typeof updateVersesDisplay === 'function') {
+                    updateVersesDisplay();
+                }
+            });
+        }
+    }
+});
+
+// Function to set entry type when button is clicked
+function setEntryType(type) {
+    const modalEntryType = document.getElementById('modalEntryType');
+    
+    if (modalEntryType) {
+        modalEntryType.value = type;
+        // Trigger change event
+        const event = new Event('change', { bubbles: true });
+        modalEntryType.dispatchEvent(event);
+        
+        // Manually toggle fields
+        toggleFieldsForType(type);
+    }
+}
+
+// Function to toggle fields based on entry type
+function toggleFieldsForType(type) {
+    const imageField = document.getElementById('imageField');
+    const emojiField = document.getElementById('emojiField');
+    const prayerListField = document.getElementById('prayerListField');
+    const contentField = document.getElementById('contentField');
+    const titleLabel = document.getElementById('titleLabel');
+    const contentLabel = document.getElementById('contentLabel');
+    
+    if (type === 'mood_board') {
+        if (imageField) imageField.style.display = 'block';
+        if (emojiField) emojiField.style.display = 'block';
+        if (prayerListField) prayerListField.style.display = 'none';
+        if (contentField) contentField.style.display = 'block';
+        if (titleLabel) titleLabel.textContent = 'Title';
+        if (contentLabel) contentLabel.textContent = 'Content';
+    } else if (type === 'prayer') {
+        if (imageField) imageField.style.display = 'none';
+        if (emojiField) emojiField.style.display = 'none';
+        if (prayerListField) prayerListField.style.display = 'block';
+        if (contentField) contentField.style.display = 'none';
+        if (titleLabel) titleLabel.textContent = 'Title';
+        if (contentLabel) contentLabel.textContent = 'Content';
+    } else if (type === 'answered_prayer') {
+        if (imageField) imageField.style.display = 'none';
+        if (emojiField) emojiField.style.display = 'none';
+        if (prayerListField) prayerListField.style.display = 'none';
+        if (contentField) contentField.style.display = 'block';
+        if (titleLabel) titleLabel.textContent = 'Answered Prayer';
+        if (contentLabel) contentLabel.textContent = 'Tell Us Your Story!';
+    } else if (type === 'devotion') {
+        if (imageField) imageField.style.display = 'none';
+        if (emojiField) emojiField.style.display = 'none';
+        if (prayerListField) prayerListField.style.display = 'none';
+        if (contentField) contentField.style.display = 'none';
+        if (titleLabel) titleLabel.textContent = 'Scripture';
+        if (contentLabel) contentLabel.textContent = 'Observation';
+    } else {
+        if (imageField) imageField.style.display = 'none';
+        if (emojiField) emojiField.style.display = 'none';
+        if (prayerListField) prayerListField.style.display = 'none';
+        if (contentField) contentField.style.display = 'block';
+        if (titleLabel) titleLabel.textContent = 'Title';
+        if (contentLabel) contentLabel.textContent = 'Content';
+    }
+}
+</script>
+{% endblock %}
+

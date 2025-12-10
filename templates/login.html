@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Praise & Worship Scheduler{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background: linear-gradient(135deg, #1a2e3f 0%, #2d4a6f 50%, #3d6b7f 100%);
+        min-height: 100vh;
+    }
+    
+    [data-theme="dark"] body {
+        background: linear-gradient(135deg, #0f1f2f 0%, #1e3a5f 50%, #2d5b6f 100%);
+    }
+    
+    .navbar {
+        display: none;
+    }
+    .login-container {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    .login-logo {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .login-logo img {
+        max-width: 250px;
+        height: auto;
+        margin-bottom: 1rem;
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+    }
+    .login-card {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        border: none;
+        border-radius: 15px;
+        background: white;
+        transition: background-color 0.3s ease;
+    }
+    
+    [data-theme="dark"] .login-card {
+        background: var(--card-bg);
+    }
+    
+    .login-card .card-header {
+        background: linear-gradient(135deg, #1a2e3f 0%, #2d4a6f 50%, #3d6b7f 100%);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border: none;
+        padding: 1.5rem;
+    }
+    .login-card .card-header h3 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.5rem;
+    }
+    .login-card .card-body {
+        padding: 2rem;
+    }
+    .form-label {
+        font-weight: 500;
+        color: #333;
+        transition: color 0.3s ease;
+    }
+    
+    [data-theme="dark"] .form-label {
+        color: var(--text-color);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #1a2e3f 0%, #2d4a6f 50%, #3d6b7f 100%);
+        border: none;
+        padding: 0.75rem;
+        font-weight: 500;
+        transition: transform 0.2s;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(44, 95, 111, 0.4);
+        background: linear-gradient(135deg, #1B4D5E 0%, #2E7A7A 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="row justify-content-center w-100">
+        <div class="col-md-4 col-lg-4">
+            <div class="login-logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Logo" onerror="this.style.display='none'">
+            </div>
+            <div class="card login-card">
+                <div class="card-header">
+                    <h3 class="text-center">Login</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ form.username.label(class="form-label") }}
+                            {{ form.username(class="form-control") }}
+                            {% if form.username.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.username.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ form.password.label(class="form-label") }}
+                            {{ form.password(class="form-control") }}
+                            {% if form.password.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.password.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

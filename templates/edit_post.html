@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Post - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Edit Post</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('edit_profile_post', post_id=post.id) }}" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.content.label(class="form-label") }}
+                            {{ form.content(class="form-control", rows="5") }}
+                            {% if form.content.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.content.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if post.image_path %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Image</label>
+                            <div>
+                                <img src="{{ url_for('static', filename=post.image_path) }}" alt="Current image" class="img-thumbnail" style="max-width: 200px;">
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.image.label(class="form-label") }}
+                            {{ form.image(class="form-control") }}
+                            <small class="form-text text-muted">{{ form.image.description }}</small>
+                            {% if form.image.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.image.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        {% if post.video_path %}
+                        <div class="mb-3">
+                            <label class="form-label">Current Video</label>
+                            <div>
+                                <video controls class="img-thumbnail" style="max-width: 200px;">
+                                    <source src="{{ url_for('static', filename=post.video_path) }}" type="video/mp4">
+                                </video>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            {{ form.video.label(class="form-label") }}
+                            {{ form.video(class="form-control") }}
+                            <small class="form-text text-muted">{{ form.video.description }}</small>
+                            {% if form.video.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.video.errors %}
+                                        <div>{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('view_musician_profile', id=musician.id) }}" class="btn btn-secondary">Cancel</a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

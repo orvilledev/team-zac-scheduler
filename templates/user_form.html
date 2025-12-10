@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Praise & Worship Scheduler{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3>{{ title }}</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control") }}
+                        {% if form.username.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.username.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control") }}
+                        {% if form.email.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.email.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.nickname.label(class="form-label") }}
+                        {{ form.nickname(class="form-control") }}
+                        {% if form.nickname.description %}
+                            <small class="form-text text-muted">{{ form.nickname.description }}</small>
+                        {% endif %}
+                        {% if form.nickname.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.nickname.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.mobile_number.label(class="form-label") }}
+                        {{ form.mobile_number(class="form-control") }}
+                        {% if form.mobile_number.description %}
+                            <small class="form-text text-muted">{{ form.mobile_number.description }}</small>
+                        {% endif %}
+                        {% if form.mobile_number.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.mobile_number.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.password(class="form-control", id="passwordField") }}
+                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                <span id="toggleIcon">👁️</span>
+                            </button>
+                        </div>
+                        <small class="form-text text-muted">
+                            {% if user %}
+                                Leave blank to keep current password. Enter new password to change it.
+                            {% else %}
+                                Leave blank to set default password "password123" (user should change it on first login).
+                            {% endif %}
+                        </small>
+                        {% if form.password.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.password.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.role.label(class="form-label") }}
+                        {{ form.role(class="form-select") }}
+                        <small class="form-text text-muted">
+                            <strong>Admin:</strong> Full access to all features including user management<br>
+                            <strong>Worship Leader:</strong> Can manage musicians, services, and practices<br>
+                            <strong>Music Director:</strong> Can manage musicians, services, and practices<br>
+                            <strong>Pastor:</strong> Can manage musicians, services, and practices<br>
+                            <strong>Technical Staff:</strong> View-only access<br>
+                            <strong>Musician:</strong> View-only access, can set own availability
+                        </small>
+                        {% if form.role.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.role.errors %}
+                                    <div>{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('users') }}" class="btn btn-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const passwordField = document.getElementById('passwordField');
+        const toggleButton = document.getElementById('togglePassword');
+        const toggleIcon = document.getElementById('toggleIcon');
+        
+        if (passwordField && toggleButton) {
+            toggleButton.addEventListener('click', function() {
+                const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', type);
+                
+                // Toggle icon
+                if (type === 'text') {
+                    toggleIcon.textContent = '🙈';
+                    toggleButton.setAttribute('title', 'Hide password');
+                } else {
+                    toggleIcon.textContent = '👁️';
+                    toggleButton.setAttribute('title', 'Show password');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+
