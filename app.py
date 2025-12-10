@@ -3176,35 +3176,24 @@ def view_slide(id):
                                  file_type=file_type, file_url=file_url, embedded_view=True)
         
         elif file_type == 'excel' or ext in ['.xls', '.xlsx']:
-            # Read Excel file
+            # Read Excel file - use openpyxl (more reliable, no compilation needed)
             try:
-                import pandas as pd  # type: ignore
-                df = pd.read_excel(file_path, sheet_name=None)  # Read all sheets
+                import openpyxl  # type: ignore
+                wb = openpyxl.load_workbook(file_path)
                 content_parts = []
-                for sheet_name, sheet_df in df.items():
+                for sheet_name in wb.sheetnames:
+                    sheet = wb[sheet_name]
                     content_parts.append(f"=== Sheet: {sheet_name} ===\n")
-                    content_parts.append(sheet_df.to_string())
+                    for row in sheet.iter_rows(values_only=True):
+                        row_data = [str(cell) if cell is not None else '' for cell in row]
+                        if any(cell for cell in row_data):  # Skip empty rows
+                            content_parts.append('\t'.join(row_data))
                     content_parts.append("\n")
                 content = '\n'.join(content_parts)
                 content_type = 'text'
             except ImportError:
-                try:
-                    import openpyxl  # type: ignore
-                    wb = openpyxl.load_workbook(file_path)
-                    content_parts = []
-                    for sheet_name in wb.sheetnames:
-                        sheet = wb[sheet_name]
-                        content_parts.append(f"=== Sheet: {sheet_name} ===\n")
-                        for row in sheet.iter_rows(values_only=True):
-                            row_data = [str(cell) if cell is not None else '' for cell in row]
-                            if any(cell for cell in row_data):  # Skip empty rows
-                                content_parts.append('\t'.join(row_data))
-                        content_parts.append("\n")
-                    content = '\n'.join(content_parts)
-                    content_type = 'text'
-                except ImportError:
-                    content = "Error: pandas or openpyxl library not installed. Cannot read Excel files."
-                    content_type = 'error'
+                content = "Error: openpyxl library not installed. Cannot read Excel files."
+                content_type = 'error'
             except Exception as e:
                 content = f"Error reading Excel file: {str(e)}"
                 content_type = 'error'
